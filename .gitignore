@@ -1,0 +1,5 @@
+uwsgi.ini
+local.py
+production.py
+*pyc
+
