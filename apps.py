@@ -31,13 +31,17 @@ class AnalyticsConfig(PreparedAppConfig):
         except:
             MULTIPROCESS = False
         if MULTIPROCESS:
+            print("Multi process mode!")
             if uwsgi_mode:
+                print("UWSGI mode!")
                 log_response.connect(self.logwriter.log_uwsgi, dispatch_uid="log_response")
             else:
+                print("Runserver mode!")
                 log_process = multiprocessing.Process(name='Logging', target=LogWriter.log_process_listener, args=(LogWriter.e,LogWriter.q,))
                 log_process.daemon=True
                 log_process.start()
                 log_response.connect(self.logwriter.log_multiprocess, dispatch_uid="log_response")
         else:
+            print("Single process mode!")
             log_response.connect(self.logwriter.log, dispatch_uid="log_response")
 
