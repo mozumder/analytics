@@ -20,15 +20,12 @@ except:
 class AnalyticsConfig(PreparedAppConfig):
     name = 'analytics'
     verbose_name = "Logging & Analytics"
-    sql_dirs = (
-        'analytics/sql',
-    )
 
     def ready(self):
+        self.logwriter = LogWriter()
 
         connection_created.connect(self.prepareSQL, dispatch_uid="prepareAnalyticsDb")
         
-        self.logwriter = LogWriter()
         try:
             MULTIPROCESS = settings.MULTIPROCESS
         except:

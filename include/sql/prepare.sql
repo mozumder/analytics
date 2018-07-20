@@ -23,7 +23,8 @@ prepare log(
     char(1),        -- 22 Protocol
     bool,           -- 23 Cached
     timestamp,      -- 24 session_start_time
-    bool            -- 25 preview
+    bool,           -- 25 preview
+    bool            -- 26 prefetch
     )
 as
     with ip as (
@@ -185,6 +186,7 @@ as
         method,
         ajax,
         preview,
+        prefetch,
         referer_url_id,
         user_agent_id,
         request_content_length,
@@ -226,6 +228,7 @@ as
         $7,
         $8,
         $25,
+        $26,
         (
             select id from analytics_url where analytics_url.name = $9
             union

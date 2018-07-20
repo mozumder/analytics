@@ -119,7 +119,7 @@ class UserAgent(models.Model):
 
 class SessionLog(models.Model):
     session_key = models.CharField(max_length=40,null=True,blank=True,db_index=True,unique=True)
-    start_time = models.DateTimeField(default=timezone.now,db_index=True)
+    start_time = models.DateTimeField(default=timezone.now,null=True,db_index=True)
     expire_time = models.DateTimeField(default=timezone.now)
     user_id = models.IntegerField(blank=True, null=True)
     bot = models.BooleanField(default=False)
@@ -203,6 +203,7 @@ class AccessLog(models.Model):
 
     ajax = models.BooleanField(verbose_name="AJAX Request",default=False)
     preview = models.BooleanField(verbose_name="Preview Request",default=False)
+    prefetch = models.BooleanField(verbose_name="Preview Request",default=False)
 
     referer_url = models.ForeignKey(URL, verbose_name="Referer", null=True,blank=True,related_name="accesslog_referer_url",on_delete=models.SET_NULL)
 
