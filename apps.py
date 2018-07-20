@@ -17,6 +17,9 @@ try:
 except:
     uwsgi_mode = False
 
+import logging
+logger = logging.getLogger("django")
+
 class AnalyticsConfig(PreparedAppConfig):
     name = 'analytics'
     verbose_name = "Logging & Analytics"
@@ -31,17 +34,17 @@ class AnalyticsConfig(PreparedAppConfig):
         except:
             MULTIPROCESS = False
         if MULTIPROCESS:
-            print("Multi process mode!")
+            logger.info('Multi process mode!')
             if uwsgi_mode:
-                print("UWSGI mode!")
+                logger.info('UWSGI mode!')
                 log_response.connect(self.logwriter.log_uwsgi, dispatch_uid="log_response")
             else:
-                print("Runserver mode!")
+                logger.info('Runserver mode =^(')
                 log_process = multiprocessing.Process(name='Logging', target=LogWriter.log_process_listener, args=(LogWriter.e,LogWriter.q,))
                 log_process.daemon=True
                 log_process.start()
                 log_response.connect(self.logwriter.log_multiprocess, dispatch_uid="log_response")
         else:
-            print("Single process mode!")
+            logger.info('Single Processor mode =^(')
             log_response.connect(self.logwriter.log, dispatch_uid="log_response")
 
