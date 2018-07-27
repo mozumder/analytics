@@ -181,7 +181,7 @@ class SessionLogAdmin(admin.ModelAdmin):
 class AccessLogAdmin(admin.ModelAdmin):
     list_display = ['timestamp','colored_ip','colored_response_time','colored_size','colored_request_url','referer_url','colored_user_agent']
     list_display_links = ['timestamp',]
-    readonly_fields=('timestamp','user','ip','host_name','protocol','request_url','status','method','ajax','preview','lookup_time','ssl_time','connect_time','response_time','cached','log_timestamp','referer_url','user_agent','accept_type','accept_language','accept_encoding','response_content_type','response_content_length','compress','session','session_log','latitude','longitude')
+    readonly_fields=('timestamp','user','ip','host_name','protocol','request_url','status','method','ajax','preview','prefetch','lookup_time','ssl_time','connect_time','response_time','cached','log_timestamp','referer_url','user_agent','accept_type','accept_language','accept_encoding','response_content_type','response_content_length','compress','session','session_log','latitude','longitude')
     search_fields = ['timestamp','ip','request_url','status']
     fieldsets = [
         (None, {'fields': [
@@ -194,6 +194,7 @@ class AccessLogAdmin(admin.ModelAdmin):
             ('referer_url'),
             ('ajax'),
             ('preview'),
+            ('prefetch'),
             ('user_agent'),
             ('accept_type'),
             ('accept_language'),

@@ -203,7 +203,7 @@ class AccessLog(models.Model):
 
     ajax = models.BooleanField(verbose_name="AJAX Request",default=False)
     preview = models.BooleanField(verbose_name="Preview Request",default=False)
-    prefetch = models.BooleanField(verbose_name="Preview Request",default=False)
+    prefetch = models.BooleanField(verbose_name="Prefetch Request",default=False)
 
     referer_url = models.ForeignKey(URL, verbose_name="Referer", null=True,blank=True,related_name="accesslog_referer_url",on_delete=models.SET_NULL)
 
