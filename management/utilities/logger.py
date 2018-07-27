@@ -68,7 +68,7 @@ class LogWriter():
 #        msg = self.msg
 
         c = connection.cursor()
-        c.execute("execute " + LogWriter.log_sql + "(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s);", [
+        c.execute("execute " + LogWriter.log_sql + "(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s);", [
             msg.timestamp,
             msg.ip,
             msg.response_time,
@@ -94,7 +94,8 @@ class LogWriter():
             msg.cached,
             msg.session_start_time,
             msg.preview,
-            msg.prefetch
+            msg.prefetch,
+            msg.bot
         ])
         log_result = c.fetchone()
 
@@ -143,6 +144,7 @@ class LogWriter():
         else:
             msg.preview = False
             msg.prefetch = False
+        msg.bot = response.request.bot
         msg.accept = response.request.META.get('HTTP_ACCEPT')
         msg.accept_language = response.request.META.get('HTTP_ACCEPT_LANGUAGE')
         msg.accept_encoding = response.request.META.get('HTTP_ACCEPT_ENCODING')

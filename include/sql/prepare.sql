@@ -24,7 +24,8 @@ prepare log(
     bool,           -- 23 Cached
     timestamp,      -- 24 session_start_time
     bool,           -- 25 preview
-    bool            -- 26 prefetch
+    bool,           -- 26 prefetch
+    bool            -- 27 bot
     )
 as
     with ip as (
@@ -37,7 +38,7 @@ as
         values
             (
                 $2,
-                false
+                $27
             )
         on conflict do nothing
         returning id
@@ -94,7 +95,7 @@ as
             )
         select
             $10,
-            false
+            $27
         where
             $10 NOTNULL
         on conflict do nothing
@@ -166,7 +167,7 @@ as
             $18,
             $24,
             $19,
-            false,
+            $27,
             expire_date
         from django_session
         where
