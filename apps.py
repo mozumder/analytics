@@ -23,11 +23,11 @@ logger = logging.getLogger("django")
 class AnalyticsConfig(PreparedAppConfig):
     name = 'analytics'
     verbose_name = "Logging & Analytics"
+    dbConnectSignal = 'prepareAnalyticsDb'
 
     def ready(self):
         self.logwriter = LogWriter()
-
-        connection_created.connect(self.prepareSQL, dispatch_uid="prepareAnalyticsDb")
+        connection_created.connect(self.prepareSQL, dispatch_uid=self.dbConnectSignal)
         
         try:
             MULTIPROCESS = settings.MULTIPROCESS
