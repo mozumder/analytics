@@ -25,6 +25,10 @@ class AnalyticsConfig(PreparedAppConfig):
     verbose_name = "Logging & Analytics"
     dbConnectSignal = 'prepareAnalyticsDb'
 
+    sql_dirs = (
+            'analytics/include/sql',
+            )
+
     def ready(self):
         self.logwriter = LogWriter()
         connection_created.connect(self.prepareSQL, dispatch_uid=self.dbConnectSignal)
