@@ -174,7 +174,9 @@ class LogWriter():
 
         msg.cached = response.cached
         if 'content-encoding' in response:
-            if response['content-encoding'] == 'gzip':
+            if response['content-encoding'] == 'deflate':
+                msg.compress = DEFLATE
+            elif response['content-encoding'] == 'gzip':
                 msg.compress = GZIP
             else:
                 msg.compress = UNCOMPRESSED

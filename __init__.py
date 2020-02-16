@@ -30,11 +30,13 @@ UNCOMPRESSED = '0'
 GZIP = '1'
 SDCH = '2'
 BROTLI = '3'
+DEFLATE = '4'
 COMPRESSION_CHOICES = (
     (UNCOMPRESSED, 'None'),
-    (GZIP, 'Gzip'),
+    (GZIP, 'gzip'),
     (SDCH, 'SDCH'),
     (BROTLI, 'Brotli'),
+    (DEFLATE, 'deflate'),
 )
 COMPRESSION_CHOICES_LOOKUP = dict([i[1],i[0]] for i in COMPRESSION_CHOICES)
 COMPRESSION_CHOICES_DICT = dict(COMPRESSION_CHOICES)
