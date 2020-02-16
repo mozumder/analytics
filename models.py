@@ -229,9 +229,13 @@ class AccessLog(models.Model):
         if self.compress == '0':
             color = RED
         elif self.compress == '1':
-            color = BLACK
-        elif self.compress == '0':
+            color = ORANGE
+        elif self.compress == '2':
+            color = YELLOW
+        elif self.compress == '3':
             color = PURPLE
+        elif self.compress == '4':
+            color = BLACK
         return format_html(
             '<span style="color: {};">{}</span>',
             color,
