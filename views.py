@@ -1,7 +1,7 @@
 from django.shortcuts import render
 from django.http import HttpResponseRedirect, HttpResponse, StreamingHttpResponse, JsonResponse, HttpResponseNotFound
 from .models import AccessLog
-from .signals import *
+from .signals import log_response
 
 # Create your views here.
 

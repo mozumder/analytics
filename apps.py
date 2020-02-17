@@ -8,7 +8,7 @@ from django.db.backends.signals import connection_created
 from unchained.apps import PreparedAppConfig
 
 from analytics.management.utilities.logger import LogWriter
-from analytics.signals import *
+from analytics.signals import log_response
 
 try:
     import uwsgi
@@ -29,10 +29,16 @@ class AnalyticsConfig(PreparedAppConfig):
             'analytics/include/sql',
             )
 
+    def db_connected(self,sender, connection, **kwargs):
+        super().db_connected(sender, connection, **kwargs)
+        self.logwriter.connection = connection
+        self.logwriter.cursor = connection.cursor()
+
     def ready(self):
-        self.logwriter = LogWriter()
-        connection_created.connect(self.prepareSQL, dispatch_uid=self.dbConnectSignal)
-        
+        connection_created.connect(self.db_connected, dispatch_uid=self.dbConnectSignal)
+
+        self.logwriter = LogWriter(None)
+
         try:
             MULTIPROCESS = settings.MULTIPROCESS
         except:
@@ -44,11 +50,10 @@ class AnalyticsConfig(PreparedAppConfig):
                 log_response.connect(self.logwriter.log_uwsgi, dispatch_uid="log_response")
             else:
                 logger.info('Runserver mode =^(')
-                log_process = multiprocessing.Process(name='Logging', target=LogWriter.log_process_listener, args=(LogWriter.e,LogWriter.q,))
+                log_process = multiprocessing.Process(name='Logging', target=LogWriter.log_process_listener, args=(LogWriter.e,LogWriter.q))
                 log_process.daemon=True
                 log_process.start()
                 log_response.connect(self.logwriter.log_multiprocess, dispatch_uid="log_response")
         else:
             logger.info('Single Processor mode =^(')
             log_response.connect(self.logwriter.log, dispatch_uid="log_response")
-

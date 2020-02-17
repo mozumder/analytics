@@ -141,6 +141,7 @@ class SessionLog(models.Model):
 class AccessLogManager(models.Manager):
 
     def log(self,response):
+        print('AccessLogManager.log()')
         log_data_ready.send(sender=self.__class__, response=response)
 
 

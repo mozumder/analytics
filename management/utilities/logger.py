@@ -59,16 +59,16 @@ class logMessage:
 
 class LogWriter():
     log_sql = 'log'
-
+    def __init__(self, connection):
+        self.connection = connection
     @staticmethod
-    def write(msg=None):
-    
+    def write(conn, msg=None):
         if uwsgi_mode:
             msg = pickle.loads(msg)
 #        msg = self.msg
+        cursor = connection.cursor()
 
-        c = connection.cursor()
-        c.execute("execute " + LogWriter.log_sql + "(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s);", [
+        cursor.execute("execute " + LogWriter.log_sql + "(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s);", [
             msg.timestamp,
             msg.ip,
             msg.response_time,
@@ -97,12 +97,28 @@ class LogWriter():
             msg.prefetch,
             msg.bot
         ])
-        log_result = c.fetchone()
-
-        analytics_logger.info('%s | %s | %fms | %s | %s | %s | %s | %s | %s | %s | %i bytes | %fms | %s' % (timezone.localtime(log_result[1]).strftime("%Y-%m-%d %H:%M:%S.%f"), msg.ip, log_result[5], msg.url, msg.cached, msg.referer, msg.user_agent, msg.session_key, msg.user_id, msg.status_code, msg.response_content_length, (log_result[6]-log_result[1]).microseconds/1000, msg.session_start_time))
-
+        result = cursor.fetchone()
+        log_time = timezone.localtime(result[1]).strftime("%Y-%m-%d %H:%M:%S.%f")
+        log_response_time = (result[6]-result[1]).microseconds/1000
+        analytics_logger.info(
+            f'{log_time} |'
+            f' {msg.ip} |'
+            f' {result[5]:.3f}ms |'
+            f' {msg.url} |'
+            f' {msg.cached} |'
+            f' {msg.referer} |'
+            f' {msg.user_agent} |'
+            f' {msg.session_key} |'
+            f' {msg.user_id} |'
+            f' {msg.status_code} |'
+            f' {msg.response_content_length} bytes |'
+            f' {log_response_time}ms |'
+            f' {msg.session_start_time} |'
+        )
+        cursor.close()
+        
     @staticmethod
-    def prepare(response):
+    def create_log_message(response):
     
         msg = logMessage()
 
@@ -216,17 +232,18 @@ class LogWriter():
 
         return msg
 
+    
     def log(self, sender, response, **kwargs):
-        msg = self.prepare(response)
-        self.write(msg)
+        msg = self.create_log_message(response)
+        self.write(self.connection, msg)
 
     def log_multiprocess(self, sender, response, **kwargs):
-        msg = self.prepare(response)
+        msg = self.create_log_message(response)
         self.q.put(msg)
         self.e.set()
 
     def log_uwsgi(self, sender, response, **kwargs):
-        msg = self.prepare(response)
+        msg = self.create_log_message(response)
         picklestring = pickle.dumps(msg)
         uwsgi.mule_msg(picklestring,1)
 
