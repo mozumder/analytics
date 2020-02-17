@@ -253,28 +253,6 @@ class LogWriter():
         picklestring = pickle.dumps(msg)
         uwsgi.mule_msg(picklestring,1)
 
-    def execute_sql_files(self,command):
-        pth = os.path.dirname(inspect.getmodule(self.__class__).__file__) + '/sql'
-        if not hasattr(self, 'sql_dirs'):
-            self.sql_dirs = [pth]
-        for dir in self.sql_dirs:
-            file_name = dir + '/' + command + '.sql'
-            try:
-                file = open(file_name, 'r')
-            except FileNotFoundError:
-                dblogger.debug('No SQL file: %s' % file_name)
-                pass
-            except (OSError, IOError) as e:
-                dblogger.error('Error reading SQL file: %s' % file_name)
-                raise e
-            else:
-                sql_commands=file.read().strip()
-                if sql_commands:
-                    cursor = connection.cursor()
-                    cursor.execute(sql_commands)
-                    cursor.close()
-
-
     if not uwsgi_mode:
         q = multiprocessing.Queue()
         e = multiprocessing.Event()
