@@ -272,6 +272,10 @@ class LogWriter():
             else:
                 sql_commands=file.read().strip()
                 if sql_commands:
+                    try:
+                        cursor.execute('deallocate log;')
+                    except:
+                        pass
                     cursor.execute(sql_commands)
 
             lock=threading.Lock()
