@@ -1,3 +1,4 @@
+from django.apps import apps
 from django.apps import AppConfig
 from django.db import connection
 from django.conf import settings
@@ -30,7 +31,8 @@ class AnalyticsConfig(PreparedAppConfig):
 
     def db_connected(self,sender, connection, **kwargs):
         super().db_connected(sender, connection, **kwargs)
-        self.logwriter = LogWriter(self.cursor, self._lock)
+        lock = apps.get_app_config('unchained')._lock
+        self.logwriter = LogWriter(self.cursor, lock)
 
         try:
             MULTIPROCESS = settings.MULTIPROCESS
