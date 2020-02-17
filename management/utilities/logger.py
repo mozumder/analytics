@@ -1,16 +1,18 @@
+import multiprocessing
+import threading
+import os
+import logging
+import time
+import pickle
+import inspect
+
 from django.db import connection
 from django.core.cache import cache
-import multiprocessing
+from django.utils import timezone
 
 from analytics.__init__ import *
 from analytics.signals import *
 
-import logging
-import time
-
-from django.utils import timezone
-
-import pickle
 
 try:
     import uwsgi
@@ -26,7 +28,7 @@ except:
 #logging.basicConfig(handlers=[logging.StreamHandler(sys.stdout)], level=logging.DEBUG, format='%(asctime)-15s|%(levelname)-8s|%(process)d|%(name)s|%(module)s|%(message)s')
 
 logger = logging.getLogger("django")
-analytics_logger = logging.getLogger("analytics")
+dblogger = logging.getLogger("database")
 
 class logMessage:
     timestamp = None
@@ -59,47 +61,52 @@ class logMessage:
 
 class LogWriter():
     log_sql = 'log'
-    def __init__(self, connection):
-        self.connection = connection
+    def __init__(self, cursor=None, lock=None):
+        self.cursor = cursor
+        self._lock = lock
+
+    def threaded_write(self, msg=None):
+        self.write(self.cursor, self._lock, msg)
+
     @staticmethod
-    def write(conn, msg=None):
+    def write(cursor, lock, msg=None):
         if uwsgi_mode:
             msg = pickle.loads(msg)
 #        msg = self.msg
-        cursor = connection.cursor()
-
-        cursor.execute("execute " + LogWriter.log_sql + "(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s);", [
-            msg.timestamp,
-            msg.ip,
-            msg.response_time,
-            msg.status_code,
-            msg.url[:508] + (msg.url[508:] and '..') if msg.url else None,
-            msg.request_content_type[:48] + (msg.request_content_type[48:] and '..') if msg.request_content_type else None,
-            msg.request_method,
-            msg.ajax,
-            msg.referer[:508] + (msg.referer[508:] and '..') if msg.referer else None,
-            msg.user_agent[:252] + (msg.user_agent[252:] and '..') if msg.user_agent else None,
-            msg.request_content_length,
-            msg.accept[:252] + (msg.accept[252:] and '..') if msg.accept else None,
-            msg.accept_language[:48] + (msg.accept_language[48:] and '..') if msg.accept_language else None,
-            msg.accept_encoding[:48] + (msg.accept_encoding[48:] and '..') if msg.accept_encoding else None,
-            msg.response_content_type[:48] + (msg.response_content_type[48:] and '..') if msg.response_content_type else None,
-            msg.response_content_length,
-            msg.compress,
-            msg.session_key,
-            msg.user_id,
-            msg.latitude,
-            msg.longitude,
-            msg.protocol,
-            msg.cached,
-            msg.session_start_time,
-            msg.preview,
-            msg.prefetch,
-            msg.bot
-        ])
-        result = cursor.fetchone()
+        with lock:
+            cursor.execute("execute " + LogWriter.log_sql + "(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s);", [
+                msg.timestamp,
+                msg.ip,
+                msg.response_time,
+                msg.status_code,
+                msg.url[:508] + (msg.url[508:] and '..') if msg.url else None,
+                msg.request_content_type[:48] + (msg.request_content_type[48:] and '..') if msg.request_content_type else None,
+                msg.request_method,
+                msg.ajax,
+                msg.referer[:508] + (msg.referer[508:] and '..') if msg.referer else None,
+                msg.user_agent[:252] + (msg.user_agent[252:] and '..') if msg.user_agent else None,
+                msg.request_content_length,
+                msg.accept[:252] + (msg.accept[252:] and '..') if msg.accept else None,
+                msg.accept_language[:48] + (msg.accept_language[48:] and '..') if msg.accept_language else None,
+                msg.accept_encoding[:48] + (msg.accept_encoding[48:] and '..') if msg.accept_encoding else None,
+                msg.response_content_type[:48] + (msg.response_content_type[48:] and '..') if msg.response_content_type else None,
+                msg.response_content_length,
+                msg.compress,
+                msg.session_key,
+                msg.user_id,
+                msg.latitude,
+                msg.longitude,
+                msg.protocol,
+                msg.cached,
+                msg.session_start_time,
+                msg.preview,
+                msg.prefetch,
+                msg.bot
+            ])
+            result = cursor.fetchone()
         log_time = timezone.localtime(result[1]).strftime("%Y-%m-%d %H:%M:%S.%f")
         log_response_time = (result[6]-result[1]).microseconds/1000
+        analytics_logger = logging.getLogger("analytics")
         analytics_logger.info(
             f'{log_time} |'
             f' {msg.ip} |'
@@ -115,7 +122,6 @@ class LogWriter():
             f' {log_response_time}ms |'
             f' {msg.session_start_time} |'
         )
-        cursor.close()
         
     @staticmethod
     def create_log_message(response):
@@ -235,7 +241,7 @@ class LogWriter():
     
     def log(self, sender, response, **kwargs):
         msg = self.create_log_message(response)
-        self.write(self.connection, msg)
+        self.write(self.cursor, self._lock, msg)
 
     def log_multiprocess(self, sender, response, **kwargs):
         msg = self.create_log_message(response)
@@ -247,16 +253,58 @@ class LogWriter():
         picklestring = pickle.dumps(msg)
         uwsgi.mule_msg(picklestring,1)
 
+    def execute_sql_files(self,command):
+        pth = os.path.dirname(inspect.getmodule(self.__class__).__file__) + '/sql'
+        if not hasattr(self, 'sql_dirs'):
+            self.sql_dirs = [pth]
+        for dir in self.sql_dirs:
+            file_name = dir + '/' + command + '.sql'
+            try:
+                file = open(file_name, 'r')
+            except FileNotFoundError:
+                dblogger.debug('No SQL file: %s' % file_name)
+                pass
+            except (OSError, IOError) as e:
+                dblogger.error('Error reading SQL file: %s' % file_name)
+                raise e
+            else:
+                sql_commands=file.read().strip()
+                if sql_commands:
+                    cursor = connection.cursor()
+                    cursor.execute(sql_commands)
+                    cursor.close()
+
+
     if not uwsgi_mode:
         q = multiprocessing.Queue()
         e = multiprocessing.Event()
         @staticmethod
         def log_process_listener(e,q):
-            logger.info("Logger process now listening")
+            cursor=connection.cursor()
+            dblogger = logging.getLogger("database")
+            file_name = 'analytics/include/sql/prepare.sql'
+            try:
+                file = open(file_name, 'r')
+            except FileNotFoundError:
+                dblogger.debug('No SQL file: %s' % file_name)
+                pass
+            except (OSError, IOError) as e:
+                dblogger.error('Error reading SQL file: %s' % file_name)
+                raise e
+            else:
+                sql_commands=file.read().strip()
+                if sql_commands:
+                    cursor.execute(sql_commands)
+
+            lock=threading.Lock()
+            logwriter = LogWriter(
+                cursor=cursor,
+                lock=lock
+            )
             while True:
                 event_is_set = e.wait()
                 msg = q.get()
-                LogWriter.write(msg)
+                logwriter.threaded_write(msg)
                 e.clear()
 
 

@@ -2,7 +2,6 @@ from django.apps import AppConfig
 from django.db import connection
 from django.conf import settings
 import multiprocessing
-
 from django.db.backends.signals import connection_created
 
 from unchained.apps import PreparedAppConfig
@@ -31,13 +30,7 @@ class AnalyticsConfig(PreparedAppConfig):
 
     def db_connected(self,sender, connection, **kwargs):
         super().db_connected(sender, connection, **kwargs)
-        self.logwriter.connection = connection
-        self.logwriter.cursor = connection.cursor()
-
-    def ready(self):
-        connection_created.connect(self.db_connected, dispatch_uid=self.dbConnectSignal)
-
-        self.logwriter = LogWriter(None)
+        self.logwriter = LogWriter(self.cursor, self._lock)
 
         try:
             MULTIPROCESS = settings.MULTIPROCESS
@@ -45,6 +38,7 @@ class AnalyticsConfig(PreparedAppConfig):
             MULTIPROCESS = False
         if MULTIPROCESS:
             logger.info('Multi process mode!')
+            lock = multiprocessing.Lock()
             if uwsgi_mode:
                 logger.info('UWSGI mode!')
                 log_response.connect(self.logwriter.log_uwsgi, dispatch_uid="log_response")
