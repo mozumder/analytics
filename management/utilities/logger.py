@@ -105,7 +105,8 @@ class LogWriter():
             ])
             result = cursor.fetchone()
         log_time = timezone.localtime(result[1]).strftime("%Y-%m-%d %H:%M:%S.%f")
-        log_response_time = (result[6]-result[1]).microseconds/1000
+#        log_response_time = (result[6]-result[1]).microseconds/1000
+        log_response_time = (time.perf_counter()-msg.perf_counter)*1000
         analytics_logger = logging.getLogger("analytics")
         analytics_logger.info(
             f'{log_time} |'
@@ -119,7 +120,7 @@ class LogWriter():
             f' {msg.user_id} |'
             f' {msg.status_code} |'
             f' {msg.response_content_length} bytes |'
-            f' {log_response_time}ms |'
+            f' {log_response_time:.3f}ms |'
             f' {msg.session_start_time} |'
         )
         
@@ -129,6 +130,7 @@ class LogWriter():
         msg = logMessage()
 
         msg.timestamp = response.request.timestamp
+        msg.perf_counter = response.request.perf_counter
         msg.response_time = (time.perf_counter()-response.request.perf_counter)*1000
         msg.ip = response.get_client_ip(response.request)
         if 'REQUEST_METHOD' in response.request.META:
