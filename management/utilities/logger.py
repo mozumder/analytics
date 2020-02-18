@@ -220,8 +220,8 @@ class LogWriter():
             # waiting 50 ms should be enough.
             # Should convert to Python 3.5+ async/await or a signaling framework,
             # but it's in another process.
-            if not msg.cached:
-                time.sleep(.05)
+#            if not msg.cached:
+#                time.sleep(.05)
             cache_content = cache.get(response.pageKey)
             if cache_content == None:
                 #doh! cache already expired before we could measure it.
