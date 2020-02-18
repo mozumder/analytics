@@ -105,8 +105,8 @@ class LogWriter():
             ])
             result = cursor.fetchone()
         log_time = timezone.localtime(result[1]).strftime("%Y-%m-%d %H:%M:%S.%f")
-#        log_response_time = (result[6]-result[1]).microseconds/1000
-        log_response_time = (time.perf_counter()-msg.perf_counter)*1000
+        log_response_time = (result[6]-result[1]).microseconds/1000
+#        log_response_time = (time.perf_counter()-msg.perf_counter)*1000
         analytics_logger = logging.getLogger("analytics")
         analytics_logger.info(
             f'{log_time} |'
