@@ -276,6 +276,6 @@ as
         ),
         current_timestamp
     )
-    returning *
+    returning timestamp, log_timestamp, response_time
 ;
 

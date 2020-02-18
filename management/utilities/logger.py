@@ -9,6 +9,7 @@ import inspect
 from django.db import connection
 from django.core.cache import cache
 from django.utils import timezone
+import psycopg2
 
 from analytics.__init__ import *
 from analytics.signals import *
@@ -104,14 +105,15 @@ class LogWriter():
                 msg.bot
             ])
             result = cursor.fetchone()
-        log_time = timezone.localtime(result[1]).strftime("%Y-%m-%d %H:%M:%S.%f")
-        log_response_time = (result[6]-result[1]).microseconds/1000
+#        print(result)
+        log_time = timezone.localtime(result.timestamp).strftime("%Y-%m-%d %H:%M:%S.%f")
+        log_response_time = (result.log_timestamp-result.timestamp).microseconds/1000
 #        log_response_time = (time.perf_counter()-msg.perf_counter)*1000
         analytics_logger = logging.getLogger("analytics")
         analytics_logger.info(
             f'{log_time} |'
             f' {msg.ip} |'
-            f' {result[5]:.3f}ms |'
+            f' {result.response_time:.3f}ms |'
             f' {msg.url} |'
             f' {msg.cached} |'
             f' {msg.referer} |'
@@ -260,7 +262,8 @@ class LogWriter():
         e = multiprocessing.Event()
         @staticmethod
         def log_process_listener(e,q):
-            cursor=connection.cursor()
+            cursor = connection.cursor().connection.cursor(
+                cursor_factory=psycopg2.extras.NamedTupleCursor)
             dblogger = logging.getLogger("database")
             file_name = 'analytics/include/sql/prepare.sql'
             try:

@@ -2,14 +2,16 @@ import logging
 import threading
 
 from django.db import connection
+import psycopg2
+from uwsgi import mule_get_msg
 
 from analytics.management.utilities.logger import LogWriter
-from uwsgi import mule_get_msg
 
 logger = logging.getLogger("django")
 
 _lock=threading.Lock()
-cursor=connection.cursor()
+cursor = connection.cursor().connection.cursor(
+    cursor_factory=psycopg2.extras.NamedTupleCursor)
 
 def listener():
     global cursor
