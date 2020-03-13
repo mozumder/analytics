@@ -229,7 +229,8 @@ class LogWriter():
             cache_content = cache.get(response.pageKey)
             if cache_content == None:
                 #doh! cache already expired before we could measure it.
-                msg.response_content_length = response.length
+#                msg.response_content_length = response.length
+                msg.response_content_length = 0
             else:
                 msg.response_content_length = len(cache_content)
         else:
