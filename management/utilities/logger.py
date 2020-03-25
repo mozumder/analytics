@@ -277,7 +277,7 @@ class LogWriter():
         else:
             bot = ''
             if user_agent.device.family == 'Generic Smartphone':
-                device = ', {user_agent.device.family}'
+                device = f', {user_agent.device.family}'
             else:
                 device = f', {user_agent.device.brand} {user_agent.device.family}'
                 if user_agent.device.family != user_agent.device.model:
