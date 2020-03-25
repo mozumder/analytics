@@ -174,6 +174,15 @@ class Browser(models.Model):
             'minor_version',
             'patch',
         ]
+    def __str__(self):
+        browser = f'{self.family}'
+        if self.major_version:
+            browser = f'{browser} {self.major_version}'
+        if self.minor_version:
+            browser = f'{browser}.{self.minor_version}'
+        if self.patch:
+            browser = f'{browser} ({self.patch})'
+        return browser
 
 class OS(models.Model):
     family = models.CharField(
@@ -195,6 +204,16 @@ class OS(models.Model):
         max_length=254,
         db_index=True,
         null=True,blank=True)
+    def __str__(self):
+        os = f'{self.family}'
+        if self.major_version:
+            os = f'{os} {self.major_version}'
+        if self.minor_version:
+            os = f'{os}.{self.minor_version}'
+        if self.patch:
+            if self.minor_patch:
+                os = f'{os} ({self.patch}.{self.minor_patch})'
+        return os
     class Meta:
         unique_together = [
             'family',
@@ -227,6 +246,16 @@ class Device(models.Model):
             'family',
             'model',
         ]
+    def __str__(self):
+        if self.brand:
+            device = f'{self.brand}'
+            if self.model:
+                device = f'{device} {self.model}'
+        else:
+            device = f'{self.family}'
+
+        return device
+
 
 class UserAgent(models.Model):
     user_agent_string = models.CharField(

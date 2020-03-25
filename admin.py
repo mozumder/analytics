@@ -1,4 +1,6 @@
 from django.contrib import admin
+from django.utils.html import format_html
+from django.urls import reverse
 
 from .models import *
 
@@ -139,10 +141,87 @@ class EncodingAdmin(admin.ModelAdmin):
         }),
     ]
 
+@admin.register(Browser)
+class BrowserAdmin(admin.ModelAdmin):
+    list_display = ['id', 'family', 'major_version', 'minor_version',]
+    list_display_links = ['id','family', 'major_version', 'minor_version',]
+    readonly_fields=('id',)
+    search_fields = ['family']
+    list_filter = ('family','major_version',)
+    fieldsets = [
+        (None, {'fields': [
+            ('family',),
+            ('major_version', 'minor_version',),
+            ('patch',),
+            ]
+        }),
+    ]
+
+@admin.register(OS)
+class OSAdmin(admin.ModelAdmin):
+    list_display = ['id', 'family', 'major_version', 'minor_version',]
+    list_display_links = ['id','family', 'major_version', 'minor_version',]
+    readonly_fields=('id',)
+    search_fields = ['family']
+    list_filter = ('family','major_version',)
+    fieldsets = [
+        (None, {'fields': [
+            ('family',),
+            ('major_version', 'minor_version',),
+            ('patch','minor_patch'),
+            ]
+        }),
+    ]
+
+
+@admin.register(Device)
+class DeviceAdmin(admin.ModelAdmin):
+    list_display = ['id', 'bot', 'family', 'brand', 'model','mobile','pc','tablet','touch']
+    list_display_links = ['id','family', 'brand', 'model',]
+    readonly_fields=('id',)
+    search_fields = ['family', 'brand', 'model',]
+    list_filter = ('family','brand','model','mobile','pc','tablet','touch')
+    fieldsets = [
+        (None, {'fields': [
+            ('family',),
+            ('brand', 'model',),
+            ('mobile','pc','tablet','touch',),
+            ('bot',),
+            ]
+        }),
+    ]
+
 @admin.register(UserAgent)
 class UserAgentAdmin(admin.ModelAdmin):
-    list_display = ['id', 'bot','user_agent_string',]
-    list_display_links = ['id',]
+    list_display = ['id', 'bot', 'browser_link', 'os_link', 'device_link', 'user_agent_string',]
+    def browser_link(self, obj):
+        if obj.browser:
+            url = reverse('admin:analytics_browser_change', args = [obj.browser.id])
+            html = format_html("<a href='{}'>{}</a>", url, obj.browser.__str__())
+        else:
+            html = format_html("-")
+        return html
+    browser_link.admin_order_field = 'browser'
+    browser_link.short_description = 'browser'
+    def os_link(self, obj):
+        if obj.os:
+            url = reverse('admin:analytics_os_change', args = [obj.os.id])
+            html = format_html("<a href='{}'>{}</a>", url, obj.os.__str__())
+        else:
+            html = format_html("-")
+        return html
+    os_link.admin_order_field = 'os'
+    os_link.short_description = 'os'
+    def device_link(self, obj):
+        if obj.device:
+            url = reverse('admin:analytics_device_change', args = [obj.device.id])
+            html = format_html("<a href='{}'>{}</a>", url, obj.device.__str__())
+        else:
+            html = format_html("-")
+        return html
+    device_link.admin_order_field = 'device'
+    device_link.short_description = 'device'
+    list_display_links = ['id','browser_link', 'os_link', 'device_link', ]
     list_editable = ['bot',]
     list_filter = ('bot',)
     readonly_fields=('id',)
@@ -151,6 +230,9 @@ class UserAgentAdmin(admin.ModelAdmin):
         (None, {'fields': [
             ('user_agent_string'),
             ('bot'),
+            ('browser',),
+            ('os',),
+            ('device'),
             ]
         }),
     ]
@@ -196,7 +278,6 @@ class AccessLogAdmin(admin.ModelAdmin):
         }),
         ('Request', {'fields': [
             ('ip'),
-            ('host_name'),
             ('referer_url'),
             ('ajax'),
             ('preview'),
