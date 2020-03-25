@@ -266,7 +266,7 @@ class LogWriter():
         if user_agent.os.family == 'Other':
             os = ''
         else:
-            os = f', {user_agent.os.family} {os_major_version}'
+            os = f', {user_agent.os.family}'
             if os_major_version:
                 os = f'{os} {os_major_version}'
             if os_minor_version:
@@ -276,7 +276,7 @@ class LogWriter():
             bot = '*'
         else:
             bot = ''
-            if user_agent.device.family == 'Generic':
+            if user_agent.device.family == 'Generic Generic':
                 device = ''
             else:
                 device = f', {user_agent.device.brand} {user_agent.device.family}'
