@@ -257,29 +257,35 @@ class LogWriter():
         log_response_time = (result.log_timestamp-result.timestamp).microseconds/1000
 #        log_response_time = (time.perf_counter()-msg.perf_counter)*1000
 
+        domain = host[host.find(".")+1:]
         browser = f'{user_agent.browser.family} {browser_major_version}'
         if browser_minor_version:
             browser = f'{browser}.{browser_minor_version}'
-        os = f'{user_agent.os.family} {os_major_version}'
-        if os_minor_version:
-            os = f'{os}.{os_minor_version}'
-        if user_agent.device.family == 'Other':
-            device = ''
+        if user_agent.os.family == 'Other':
+            os = ''
         else:
+            os = f', {user_agent.os.family} {os_major_version}'
+            if os_minor_version:
+                os = f'{os}.{os_minor_version}'
+        if user_agent.device.family == 'Spider':
+            device = ''
+            bot = '*'
+        else:
+            bot = ''
             device = f', {user_agent.device.brand} {user_agent.device.family}'
             if user_agent.device.family != user_agent.device.model:
                  device = f'{device} {user_agent.device.model}'
         log_delay = log_response_time - result.response_time
         analytics_logger.info(
             f'{msg.ip} '
-            f'{host} '
+            f'{domain} '
             f'{user_id} '
             f'{result.response_time:.3f}ms{cached} '
             f'{log_delay:.3f}ms '
             f'{msg.response_content_length}b{compress} '
             f'{msg.status_code} '
             f'{referer} {direction} {url} '
-            f"({browser}, {os}{device}) "
+            f"({browser}{os}{device}){bot} "
         )
         
     @staticmethod
