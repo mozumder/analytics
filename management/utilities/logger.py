@@ -5,11 +5,16 @@ import logging
 import time
 import pickle
 import inspect
+import socket
 
 from django.db import connection
 from django.core.cache import cache
 from django.utils import timezone
+from django.conf import settings
+
 import psycopg2
+
+from user_agents import parse as parse_ua
 
 from analytics.__init__ import *
 from analytics.signals import *
@@ -30,6 +35,7 @@ except:
 
 logger = logging.getLogger("django")
 dblogger = logging.getLogger("database")
+analytics_logger = logging.getLogger("analytics")
 
 class logMessage:
     timestamp = None
@@ -74,6 +80,89 @@ class LogWriter():
         if uwsgi_mode:
             msg = pickle.loads(msg)
 #        msg = self.msg
+
+        if msg.cached:
+            cached = '*'
+        else:
+            cached = ''
+        if msg.compress:
+            compress = '*'
+        else:
+            compress = ''
+        if hasattr(settings,'BASEURL'):
+            if msg.url.startswith(settings.BASEURL):
+                url = msg.url[len(settings.BASEURL):]
+            else:
+                url = msg.url
+            if msg.referer:
+                if msg.referer.startswith(settings.BASEURL):
+                    referer = msg.referer[len(settings.BASEURL):]
+                else:
+                    referer = msg.referer
+            else:
+                referer = '*'
+        else:
+            url = msg.url
+            if msg.referer:
+                referer = msg.referer
+            else:
+                referer = '*'
+        if msg.user_id:
+            user_id = msg.user_id
+        else:
+            user_id = '-'
+
+        if msg.bot:
+            bot = '*'
+        else:
+            bot = ''
+
+        if METHOD_CHOICES_DICT[msg.request_method] == 'GET':
+            method = '-'
+        elif METHOD_CHOICES_DICT[msg.request_method] == 'POST':
+            method = '+'
+        else:
+            method = '?'
+        if msg.ajax:
+            direction = f'<{method}'
+        else:
+            direction = f'{method}>'
+
+        ua_string = msg.user_agent[:252] + (msg.user_agent[252:] and '..') if msg.user_agent else None
+        user_agent = parse_ua(ua_string)
+        if len(user_agent.browser.version) > 0:
+            browser_major_version = user_agent.browser.version[0]
+        else:
+            browser_major_version = None
+        if len(user_agent.browser.version) > 1:
+            browser_minor_version = user_agent.browser.version[1]
+        else:
+            browser_minor_version = None
+        if len(user_agent.browser.version) > 2:
+            browser_patch = user_agent.browser.version[2]
+        else:
+            browser_patch = None
+        if len(user_agent.os.version) > 0:
+            os_major_version = user_agent.os.version[0]
+        else:
+            os_major_version = None
+        if len(user_agent.os.version) > 1:
+            os_minor_version = user_agent.os.version[1]
+        else:
+            os_minor_version = None
+        if len(user_agent.os.version) > 2:
+            os_patch = user_agent.os.version[2]
+        else:
+            os_patch = None
+        if len(user_agent.os.version) > 3:
+            os_minor_patch = user_agent.os.version[3]
+        else:
+            os_minor_patch = None
+
+        host = None
+        create_host = True
+        update_host = False
+
         with lock:
             cursor.execute("execute " + LogWriter.log_sql + "(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s);", [
                 msg.timestamp,
@@ -85,7 +174,7 @@ class LogWriter():
                 msg.request_method,
                 msg.ajax,
                 msg.referer[:508] + (msg.referer[508:] and '..') if msg.referer else None,
-                msg.user_agent[:252] + (msg.user_agent[252:] and '..') if msg.user_agent else None,
+                ua_string,
                 msg.request_content_length,
                 msg.accept[:252] + (msg.accept[252:] and '..') if msg.accept else None,
                 msg.accept_language[:48] + (msg.accept_language[48:] and '..') if msg.accept_language else None,
@@ -102,28 +191,95 @@ class LogWriter():
                 msg.session_start_time,
                 msg.preview,
                 msg.prefetch,
-                msg.bot
+                msg.bot,
             ])
             result = cursor.fetchone()
-#        print(result)
-        log_time = timezone.localtime(result.timestamp).strftime("%Y-%m-%d %H:%M:%S.%f")
+#            print(f'{dir(result)=}')
+#            dir(result)=['__add__', '__class__', '__contains__', '__delattr__', '__dir__', '__doc__', '__eq__', '__format__', '__ge__', '__getattribute__', '__getitem__', '__getnewargs__', '__gt__', '__hash__', '__init__', '__init_subclass__', '__iter__', '__le__', '__len__', '__lt__', '__module__', '__mul__', '__ne__', '__new__', '__reduce__', '__reduce_ex__', '__repr__', '__rmul__', '__setattr__', '__sizeof__', '__slots__', '__str__', '__subclasshook__', '_asdict', '_field_defaults', '_fields', '_fields_defaults', '_make', '_replace', 'accept_encoding_id', 'accept_language_id', 'accept_type_id', 'ajax', 'cached', 'compress', 'connect_time', 'count', 'host_name_id', 'id', 'index', 'ip_id', 'latitude', 'log_timestamp', 'longitude', 'lookup_time', 'method', 'prefetch', 'preview', 'protocol', 'referer_url_id', 'request_content_length', 'request_content_type_id', 'request_url_id', 'response_content_length', 'response_content_type_id', 'response_time', 'session_id', 'session_log_id', 'ssl_time', 'status', 'timestamp', 'user_agent_id', 'user_id']
+
+
+            cursor.execute('execute get_host(%s);' , [result.ip_id])
+            ip_result = cursor.fetchone()
+            if ip_result:
+                host = ip_result.name
+                create_host = False
+            if host == None:
+                try:
+                    host = socket.gethostbyaddr(msg.ip)[0]
+                    update_host = True
+                except:
+                    host = '-'
+            if create_host and update_host:
+                cursor.execute('execute update_host(%s, %s);' , [result.ip_id, host])
+
+            cursor.execute('execute get_user_agent(%s);' , [result.user_agent_id])
+            useragent_result = cursor.fetchone()
+
+            if useragent_result.browser_id == None:
+                cursor.execute(
+                    'execute update_browser(%s, %s, %s, %s, %s);' ,
+                    [
+                        result.user_agent_id,
+                        user_agent.browser.family,
+                        browser_major_version,
+                        browser_minor_version,
+                        browser_patch,
+                    ])
+
+            if useragent_result.os_id == None:
+                cursor.execute(
+                    'execute update_os(%s, %s, %s, %s, %s, %s);' ,
+                    [
+                        result.user_agent_id,
+                        user_agent.os.family,
+                        os_major_version,
+                        os_minor_version,
+                        os_patch,
+                        os_minor_patch,
+                    ])
+
+            if useragent_result.device_id == None:
+                cursor.execute(
+                    'execute update_device(%s, %s, %s, %s, %s, %s, %s, %s, %s);' ,
+                    [
+                        result.user_agent_id,
+                        user_agent.device.family,
+                        user_agent.device.brand,
+                        user_agent.device.model,
+                        user_agent.is_mobile,
+                        user_agent.is_pc,
+                        user_agent.is_tablet,
+                        user_agent.is_touch_capable,
+                        user_agent.is_bot
+                    ])
+
+        timestamp = timezone.localtime(result.timestamp).strftime("%Y-%m-%d %H:%M:%S")
         log_response_time = (result.log_timestamp-result.timestamp).microseconds/1000
 #        log_response_time = (time.perf_counter()-msg.perf_counter)*1000
-        analytics_logger = logging.getLogger("analytics")
+
+        browser = f'{user_agent.browser.family} {browser_major_version}'
+        if browser_minor_version:
+            browser = f'{browser}.{browser_minor_version}'
+        os = f'{user_agent.os.family} {os_major_version}'
+        if os_minor_version:
+            os = f'{os}.{os_minor_version}'
+        if user_agent.device.family == 'Other':
+            device = ''
+        else:
+            device = f', {user_agent.device.brand} {user_agent.device.family}'
+            if user_agent.device.family != user_agent.device.model:
+                 device = f'{device} {user_agent.device.model}'
+        log_delay = log_response_time - result.response_time
         analytics_logger.info(
-            f'{log_time} |'
-            f' {msg.ip} |'
-            f' {result.response_time:.3f}ms |'
-            f' {msg.url} |'
-            f' {msg.cached} |'
-            f' {msg.referer} |'
-            f' {msg.user_agent} |'
-            f' {msg.session_key} |'
-            f' {msg.user_id} |'
-            f' {msg.status_code} |'
-            f' {msg.response_content_length} bytes |'
-            f' {log_response_time:.3f}ms |'
-            f' {msg.session_start_time} |'
+            f'{msg.ip} '
+            f'{host} '
+            f'{user_id} '
+            f'{result.response_time:.3f}ms{cached} '
+            f'{log_delay:.3f}ms '
+            f'{msg.response_content_length}b{compress} '
+            f'{msg.status_code} '
+            f'{referer} {direction} {url} '
+            f"({browser}, {os}{device}) "
         )
         
     @staticmethod

@@ -206,8 +206,8 @@ as
         session_log_id,
         log_timestamp
     )
-    values
-    (
+    select
+
         $1,
         (
             select id from analytics_ip where analytics_ip.address = $2
@@ -275,7 +275,220 @@ as
             select id from session_log
         ),
         current_timestamp
-    )
-    returning timestamp, log_timestamp, response_time
+        
+
+    returning timestamp, log_timestamp, response_time, ip_id, user_agent_id
 ;
 
+prepare get_host(
+    integer
+)
+as
+    select
+        name
+    from
+        analytics_ip
+    left outer join
+        analytics_hostname
+    on
+        analytics_hostname.id = analytics_ip.host_id
+    where
+        analytics_ip.id = $1
+;
+
+prepare update_host(
+    integer,
+    varchar(80)
+)
+as
+    with hostname as (
+        insert into
+                analytics_hostname
+            (
+                name
+            )
+        values
+            (
+                $2
+            )
+        on conflict do nothing
+        returning id
+    )
+    update
+        analytics_ip
+    set
+        host_id = t.id
+    from
+        (
+            select id from analytics_hostname where analytics_hostname.name = $2
+            union
+            select id from hostname
+        ) as t
+    where
+        analytics_ip.id = $1 ;
+;
+
+prepare get_user_agent(
+    integer
+)
+as
+    select
+        analytics_useragent.browser_id,
+        analytics_useragent.os_id,
+        analytics_useragent.device_id
+    from
+        analytics_useragent
+    where
+        analytics_useragent.id = $1
+;
+
+prepare update_browser(
+    integer,
+    varchar(254),
+    varchar(254),
+    varchar(254),
+    varchar(254)
+)
+as
+    with browser as (
+        insert into
+                analytics_browser
+            (
+                family,
+                major_version,
+                minor_version,
+                patch
+            )
+        values
+            (
+                $2,
+                $3,
+                $4,
+                $5
+            )
+        on conflict do nothing
+        returning id
+    )
+    update
+        analytics_useragent
+    set
+        browser_id = t.id
+    from
+        (
+            select id from analytics_browser where
+                analytics_browser.family = $2
+                and analytics_browser.major_version = $3
+                and analytics_browser.minor_version = $4
+                and analytics_browser.patch = $5
+            union
+            select id from browser
+        ) as t
+    where
+        analytics_useragent.id = $1 ;
+;
+
+prepare update_os(
+    integer,
+    varchar(254),
+    varchar(254),
+    varchar(254),
+    varchar(254),
+    varchar(254)
+)
+as
+    with os as (
+        insert into
+                analytics_os
+            (
+                family,
+                major_version,
+                minor_version,
+                patch,
+                minor_patch
+            )
+        values
+            (
+                $2,
+                $3,
+                $4,
+                $5,
+                $6
+            )
+        on conflict do nothing
+        returning id
+    )
+    update
+        analytics_useragent
+    set
+        os_id = t.id
+    from
+        (
+            select id from analytics_os where
+                analytics_os.family = $2
+                and analytics_os.major_version = $3
+                and analytics_os.minor_version = $4
+                and analytics_os.patch = $5
+                and analytics_os.minor_patch = $6
+            union
+            select id from os
+        ) as t
+    where
+        analytics_useragent.id = $1 ;
+;
+
+
+prepare update_device(
+    integer,
+    varchar(254),
+    varchar(254),
+    varchar(254),
+    bool,
+    bool,
+    bool,
+    bool,
+    bool
+)
+as
+    with device as (
+        insert into
+                analytics_device
+            (
+                family,
+                brand,
+                model,
+                mobile,
+                pc,
+                tablet,
+                touch,
+                bot
+            )
+        values
+            (
+                $2,
+                $3,
+                $4,
+                $5,
+                $6,
+                $7,
+                $8,
+                $9
+            )
+        on conflict do nothing
+        returning id
+    )
+    update
+        analytics_useragent
+    set
+        device_id = t.id
+    from
+        (
+            select id from analytics_device where
+                analytics_device.family = $2
+                and analytics_device.brand = $3
+                and analytics_device.model = $4
+            union
+            select id from device
+        ) as t
+    where
+        analytics_useragent.id = $1 ;
+;
