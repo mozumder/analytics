@@ -275,9 +275,9 @@ as
             select id from session_log
         ),
         current_timestamp
-        
 
-    returning timestamp, log_timestamp, response_time, ip_id, user_agent_id
+
+    returning timestamp, log_timestamp, response_time, ip_id, user_agent_id, id
 ;
 
 prepare get_host(
@@ -491,4 +491,18 @@ as
         ) as t
     where
         analytics_useragent.id = $1 ;
+;
+
+prepare record_timestamp(
+    integer
+)
+as
+update
+    analytics_accesslog
+set
+    log_timestamp = current_timestamp
+where
+    id = $1
+returning
+    log_timestamp
 ;

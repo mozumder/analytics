@@ -253,18 +253,22 @@ class LogWriter():
                         user_agent.is_bot
                     ])
 
-        timestamp = timezone.localtime(result.timestamp).strftime("%Y-%m-%d %H:%M:%S")
-        log_response_time = (result.log_timestamp-result.timestamp).microseconds/1000
-#        log_response_time = (time.perf_counter()-msg.perf_counter)*1000
+            cursor.execute('execute record_timestamp(%s);', [ result.id ])
+            log_timestamp_result = cursor.fetchone()
+
 
         domain = host[host.find(".")+1:]
-        browser = f'{user_agent.browser.family} {browser_major_version}'
+        browser = f'{user_agent.browser.family}'
+        if browser_major_version:
+            browser = f'{browser} {browser_major_version}'
         if browser_minor_version:
             browser = f'{browser}.{browser_minor_version}'
         if user_agent.os.family == 'Other':
             os = ''
         else:
             os = f', {user_agent.os.family} {os_major_version}'
+            if os_major_version:
+                os = f'{os} {os_major_version}'
             if os_minor_version:
                 os = f'{os}.{os_minor_version}'
         if user_agent.device.family == 'Spider':
@@ -272,9 +276,16 @@ class LogWriter():
             bot = '*'
         else:
             bot = ''
-            device = f', {user_agent.device.brand} {user_agent.device.family}'
-            if user_agent.device.family != user_agent.device.model:
-                 device = f'{device} {user_agent.device.model}'
+            if user_agent.device.family == 'Generic':
+                device = ''
+            else:
+                device = f', {user_agent.device.brand} {user_agent.device.family}'
+                if user_agent.device.family != user_agent.device.model:
+                     device = f'{device} {user_agent.device.model}'
+
+        timestamp = timezone.localtime(result.timestamp).strftime("%Y-%m-%d %H:%M:%S")
+        log_response_time = (log_timestamp_result.log_timestamp-result.timestamp).microseconds/1000
+#        log_response_time = (time.perf_counter()-msg.perf_counter)*1000
         log_delay = log_response_time - result.response_time
         analytics_logger.info(
             f'{msg.ip} '
