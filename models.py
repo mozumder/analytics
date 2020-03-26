@@ -165,12 +165,15 @@ class Browser(models.Model):
         db_index=True,
         null=True,blank=True)
     class Meta:
-        unique_together = (
-            ('family',
-            'major_version',
-            'minor_version',
-            'patch'),
-        )
+        constraints = [
+            models.UniqueConstraint(
+                fields = ['family',
+                    'major_version',
+                    'minor_version',
+                    'patch'],
+                name='browser_unique'
+            )
+        ]
     def __str__(self):
         browser = f'{self.family}'
         if self.major_version:
@@ -212,13 +215,17 @@ class OS(models.Model):
                 os = f'{os} ({self.patch}.{self.minor_patch})'
         return os
     class Meta:
-        unique_together = (
-            ('family',
-            'major_version',
-            'minor_version',
-            'patch',
-            'minor_patch'),
-        )
+        constraints = [
+            models.UniqueConstraint(
+                fields = ['family',
+                    'major_version',
+                    'minor_version',
+                    'patch',
+                    'minor_patch'],
+                name='os_unique'
+            )
+        ]
+
 
 class Device(models.Model):
     brand = models.CharField(
@@ -238,11 +245,14 @@ class Device(models.Model):
     touch = models.BooleanField(default=False)
     bot = models.BooleanField(default=False)
     class Meta:
-        unique_together = (
-            ('brand',
-            'family',
-            'model'),
-        )
+        constraints = [
+            models.UniqueConstraint(
+                fields = ['brand',
+                    'family',
+                    'model'],
+                name='device_unique'
+            )
+        ]
     def __str__(self):
         if self.brand:
             device = f'{self.brand}'
