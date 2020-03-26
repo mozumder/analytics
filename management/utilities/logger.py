@@ -129,7 +129,11 @@ class LogWriter():
             direction = f'{method}>'
 
         ua_string = msg.user_agent[:252] + (msg.user_agent[252:] and '..') if msg.user_agent else None
-        user_agent = parse_ua(ua_string)
+        if ua_string:
+            user_agent = parse_ua(ua_string)
+        else:
+            user_agent = parse_ua('')
+            msg.bot = True
         if len(user_agent.browser.version) > 0:
             browser_major_version = user_agent.browser.version[0]
         else:
@@ -289,7 +293,10 @@ class LogWriter():
                     device = f', {user_agent.device.family}'
             ua = f'({browser}{os}{device}){bot}'
         else:
-            ua = f'({ua_string})*'
+            if ua_string == '':
+                ua = '(Empty User Agent)'
+            else:
+                ua = f'({ua_string})*'
 
         timestamp = timezone.localtime(result.timestamp).strftime("%Y-%m-%d %H:%M:%S")
         log_response_time = (log_timestamp_result.log_timestamp-result.timestamp).microseconds/1000

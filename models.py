@@ -239,13 +239,13 @@ class OS(models.Model):
 
 
 class Device(models.Model):
-    brand = models.CharField(
-        max_length=254,
-        db_index=True)
     family = models.CharField(
         max_length=254,
         db_index=True,
-        null=True,blank=True)
+        blank=True)
+    brand = models.CharField(
+        max_length=254,
+        null=True,db_index=True)
     model = models.CharField(
         max_length=254,
         db_index=True,
