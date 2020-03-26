@@ -420,11 +420,11 @@ class AccessLog(models.Model):
         else:
             color = BLACK
         return format_html(
-            '<span style="color: {};">{:.6}ms</span>',
+            '<span style="color: {};">{:.4}ms</span>',
             color,
             self.response_time,
         )
-    colored_response_time.short_description = 'Response Time'
+    colored_response_time.short_description = 'Time'
 
     log_timestamp = models.DateTimeField(auto_now_add=True)
     
