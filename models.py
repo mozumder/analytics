@@ -164,6 +164,13 @@ class Browser(models.Model):
         max_length=254,
         db_index=True,
         null=True,blank=True)
+    class Meta:
+        unique_together = (
+            ('family',
+            'major_version',
+            'minor_version',
+            'patch'),
+        )
     def __str__(self):
         browser = f'{self.family}'
         if self.major_version:
@@ -204,6 +211,14 @@ class OS(models.Model):
             if self.minor_patch:
                 os = f'{os} ({self.patch}.{self.minor_patch})'
         return os
+    class Meta:
+        unique_together = (
+            ('family',
+            'major_version',
+            'minor_version',
+            'patch',
+            'minor_patch'),
+        )
 
 class Device(models.Model):
     brand = models.CharField(
@@ -222,6 +237,12 @@ class Device(models.Model):
     tablet = models.BooleanField(default=False)
     touch = models.BooleanField(default=False)
     bot = models.BooleanField(default=False)
+    class Meta:
+        unique_together = (
+            ('brand',
+            'family',
+            'model'),
+        )
     def __str__(self):
         if self.brand:
             device = f'{self.brand}'
