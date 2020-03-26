@@ -292,7 +292,7 @@ class LogWriter():
                     device = f', {user_agent.device.family}'
             ua = f'({browser}{os}{device}){bot}'
         else:
-            ua = f'(ua_string)*'
+            ua = f'({ua_string})*'
 
         timestamp = timezone.localtime(result.timestamp).strftime("%Y-%m-%d %H:%M:%S")
         log_response_time = (log_timestamp_result.log_timestamp-result.timestamp).microseconds/1000

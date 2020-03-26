@@ -357,7 +357,7 @@ class UserAgent(models.Model):
                     device = f', {user_agent.device.family}'
             ua = f'{browser}{os}{device}'
         else:
-            ua = f'(self.user_agent_string)*'
+            ua = f'({self.user_agent_string})*'
             bot = ''
 
         return format_html(
