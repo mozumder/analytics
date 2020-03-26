@@ -323,31 +323,36 @@ class UserAgent(models.Model):
         else:
             os_minor_version = None
 
-        browser = f'{user_agent.browser.family}'
-        if browser_major_version:
-            browser = f'{browser} {browser_major_version}'
-        if browser_minor_version:
-            browser = f'{browser}.{browser_minor_version}'
-        if user_agent.os.family == 'Other':
-            os = ''
-        else:
-            os = f', {user_agent.os.family}'
-            if os_major_version:
-                os = f'{os} {os_major_version}'
-            if os_minor_version:
-                os = f'{os}.{os_minor_version}'
-        if user_agent.device.family == 'Spider':
-            device = ''
-            bot = '*'
-        else:
-            bot = ''
-            if user_agent.device.family == 'Generic Smartphone':
-                device = f', {user_agent.device.family}'
+        if user_agent.browser.family != 'Other':
+
+            browser = f'{user_agent.browser.family}'
+            if browser_major_version:
+                browser = f'{browser} {browser_major_version}'
+            if browser_minor_version:
+                browser = f'{browser}.{browser_minor_version}'
+            if user_agent.os.family == 'Other':
+                os = ''
             else:
-                device = f', {user_agent.device.brand} {user_agent.device.family}'
-                if user_agent.device.family != user_agent.device.model:
-                     device = f'{device} {user_agent.device.model}'
-        ua = f"{browser}{os}{device}"
+                os = f', {user_agent.os.family}'
+                if os_major_version:
+                    os = f'{os} {os_major_version}'
+                if os_minor_version:
+                    os = f'{os}.{os_minor_version}'
+            if user_agent.device.family == 'Spider':
+                device = ''
+                bot = '*'
+            else:
+                bot = ''
+                if user_agent.device.family == 'Generic Smartphone':
+                    device = f', {user_agent.device.family}'
+                else:
+                    device = f', {user_agent.device.brand} {user_agent.device.family}'
+                    if user_agent.device.family != user_agent.device.model:
+                         device = f'{device} {user_agent.device.model}'
+            ua = f'{browser}{os}{device}'
+        else:
+            ua = f'(ua_string)*'
+
         return format_html(
             '{}<span style="color: {};">{}</span>',
             ua,
