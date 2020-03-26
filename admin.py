@@ -201,8 +201,8 @@ class UserAgentAdmin(admin.ModelAdmin):
         else:
             html = format_html("-")
         return html
-    browser_link.admin_order_field = 'browser'
-    browser_link.short_description = 'browser'
+    browser_link.admin_order_field = 'Browser'
+    browser_link.short_description = 'Browser'
     def os_link(self, obj):
         if obj.os:
             url = reverse('admin:analytics_os_change', args = [obj.os.id])
@@ -210,8 +210,8 @@ class UserAgentAdmin(admin.ModelAdmin):
         else:
             html = format_html("-")
         return html
-    os_link.admin_order_field = 'os'
-    os_link.short_description = 'os'
+    os_link.admin_order_field = 'OS'
+    os_link.short_description = 'Operating System'
     def device_link(self, obj):
         if obj.device:
             url = reverse('admin:analytics_device_change', args = [obj.device.id])
@@ -219,11 +219,11 @@ class UserAgentAdmin(admin.ModelAdmin):
         else:
             html = format_html("-")
         return html
-    device_link.admin_order_field = 'device'
-    device_link.short_description = 'device'
+    device_link.admin_order_field = 'Device'
+    device_link.short_description = 'Device'
     list_display_links = ['id','browser_link', 'os_link', 'device_link', ]
     list_editable = ['bot',]
-    list_filter = ('bot',)
+    list_filter = ('bot','browser','os', 'device',)
     readonly_fields=('id',)
     search_fields = ['user_agent_string']
     fieldsets = [
@@ -261,9 +261,55 @@ class SessionLogAdmin(admin.ModelAdmin):
 
 @admin.register(AccessLog)
 class AccessLogAdmin(admin.ModelAdmin):
-    list_display = ['timestamp','colored_ip','colored_response_time','colored_size','colored_request_url','referer_url','colored_user_agent']
+    def ua_link(self, obj):
+        if obj.user_agent:
+            url = reverse('admin:analytics_useragent_change', args = [obj.user_agent.id])
+            html = format_html("<a href='{}'>{}</a>", url, obj.user_agent.__str__())
+        else:
+            html = format_html("-")
+        return html
+    ua_link.admin_order_field = 'User Agent'
+    ua_link.short_description = 'User Agent'
+
+    list_display = [
+        'timestamp',
+        'colored_ip',
+        'colored_response_time',
+        'colored_size',
+        'colored_request_url',
+        'referer_url',
+        'ua_link']
     list_display_links = ['timestamp',]
-    readonly_fields=('timestamp','user','ip','protocol','request_url','status','method','ajax','preview','prefetch','lookup_time','ssl_time','connect_time','response_time','cached','log_timestamp','referer_url','user_agent','accept_type','accept_language','accept_encoding','response_content_type','response_content_length','compress','session','session_log','latitude','longitude')
+    readonly_fields=(
+        'timestamp',
+        'user',
+        'ip',
+        'protocol',
+        'request_url',
+        'status',
+        'method',
+        'ajax',
+        'preview',
+        'prefetch',
+        'lookup_time',
+        'ssl_time',
+        'connect_time',
+        'response_time',
+        'cached',
+        'log_timestamp',
+        'referer_url',
+        'user_agent',
+        'accept_type',
+        'accept_language',
+        'accept_encoding',
+        'response_content_type',
+        'response_content_length',
+        'compress',
+        'session',
+        'session_log',
+        'latitude',
+        'longitude'
+    )
     search_fields = [
         'timestamp',
         'ip__address',

@@ -1,16 +1,13 @@
+import time
 from django.db import models
-
 from django.conf import settings
 from django.utils import timezone
 from django.utils.html import format_html
-
 from django.contrib.sessions.models import Session
-#import psycopg2
+
+from user_agents import parse as parse_ua
 
 from . import *
-
-import time
-
 from .apps import *
 
 global streaming_length
@@ -167,13 +164,6 @@ class Browser(models.Model):
         max_length=254,
         db_index=True,
         null=True,blank=True)
-    class Meta:
-        unique_together = [
-            'family',
-            'major_version',
-            'minor_version',
-            'patch',
-        ]
     def __str__(self):
         browser = f'{self.family}'
         if self.major_version:
@@ -214,14 +204,6 @@ class OS(models.Model):
             if self.minor_patch:
                 os = f'{os} ({self.patch}.{self.minor_patch})'
         return os
-    class Meta:
-        unique_together = [
-            'family',
-            'major_version',
-            'minor_version',
-            'patch',
-            'minor_patch',
-        ]
 
 class Device(models.Model):
     brand = models.CharField(
@@ -240,12 +222,6 @@ class Device(models.Model):
     tablet = models.BooleanField(default=False)
     touch = models.BooleanField(default=False)
     bot = models.BooleanField(default=False)
-    class Meta:
-        unique_together = [
-            'brand',
-            'family',
-            'model',
-        ]
     def __str__(self):
         if self.brand:
             device = f'{self.brand}'
@@ -278,18 +254,64 @@ class UserAgent(models.Model):
         on_delete=models.CASCADE,
         null=True,blank=True)
     bot = models.BooleanField(default=False)
-    def __str__(self):
-        if self.bot == False:
-            color = BLACK
-        else:
-            color = LIGHTGRAY
-        return format_html(
-            '<span style="color: {};">{}</span>',
-            color,
-            self.user_agent_string,
-        )
     class Meta:
         verbose_name = 'User Agent'
+    
+    def __str__(self):
+        if self.bot == False:
+            color = RED
+        else:
+            color = ''
+
+        user_agent = parse_ua(self.user_agent_string)
+        if len(user_agent.browser.version) > 0:
+            browser_major_version = user_agent.browser.version[0]
+        else:
+            browser_major_version = None
+        if len(user_agent.browser.version) > 1:
+            browser_minor_version = user_agent.browser.version[1]
+        else:
+            browser_minor_version = None
+        if len(user_agent.os.version) > 0:
+            os_major_version = user_agent.os.version[0]
+        else:
+            os_major_version = None
+        if len(user_agent.os.version) > 1:
+            os_minor_version = user_agent.os.version[1]
+        else:
+            os_minor_version = None
+
+        browser = f'{user_agent.browser.family}'
+        if browser_major_version:
+            browser = f'{browser} {browser_major_version}'
+        if browser_minor_version:
+            browser = f'{browser}.{browser_minor_version}'
+        if user_agent.os.family == 'Other':
+            os = ''
+        else:
+            os = f', {user_agent.os.family}'
+            if os_major_version:
+                os = f'{os} {os_major_version}'
+            if os_minor_version:
+                os = f'{os}.{os_minor_version}'
+        if user_agent.device.family == 'Spider':
+            device = ''
+            bot = '*'
+        else:
+            bot = ''
+            if user_agent.device.family == 'Generic Smartphone':
+                device = f', {user_agent.device.family}'
+            else:
+                device = f', {user_agent.device.brand} {user_agent.device.family}'
+                if user_agent.device.family != user_agent.device.model:
+                     device = f'{device} {user_agent.device.model}'
+        ua = f"{browser}{os}{device}"
+        return format_html(
+            '{}<span style="color: {};">{}</span>',
+            ua,
+            color,
+            bot,
+        )
 
 class SessionLog(models.Model):
     session_key = models.CharField(
@@ -427,9 +449,6 @@ class AccessLog(models.Model):
         UserAgent,
         null=True,blank=True,
         on_delete=models.SET_NULL)
-    def colored_user_agent(self):
-        return self.user_agent
-    colored_user_agent.short_description = 'User Agent'
 
     request_content_type = models.ForeignKey(
         MIME,
