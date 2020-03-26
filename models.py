@@ -342,12 +342,9 @@ class UserAgent(models.Model):
                     os = f'{os}.{os_minor_version}'
             bot = ''
             device = ''
-            if user_agent.device.family == 'Spider':
+            if user_agent.device.family in [
+                'Spider', 'Generic Smartphone', 'Generic Desktop']:
                 bot = '*'
-            elif user_agent.device.family == 'Generic Smartphone':
-                device = f', {user_agent.device.family}'
-            elif user_agent.device.family == 'Generic Desktop':
-                device = f', {user_agent.device.family}'
             elif user_agent.device.family != 'Other':
                 if user_agent.device.brand:
                     device = f', {user_agent.device.brand}'
