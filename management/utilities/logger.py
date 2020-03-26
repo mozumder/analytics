@@ -263,17 +263,17 @@ class LogWriter():
         domain = host[host.find(".")+1:]
         if user_agent.browser.family != 'Other':
             browser = f'{user_agent.browser.family}'
-            if browser_major_version:
+            if browser_major_version != None:
                 browser = f'{browser} {browser_major_version}'
-            if browser_minor_version:
+            if browser_minor_version != None:
                 browser = f'{browser}.{browser_minor_version}'
             if user_agent.os.family == 'Other':
                 os = ''
             else:
                 os = f', {user_agent.os.family}'
-                if os_major_version:
+                if os_major_version != None:
                     os = f'{os} {os_major_version}'
-                if os_minor_version:
+                if os_minor_version != None:
                     os = f'{os}.{os_minor_version}'
             bot = ''
             device = ''
