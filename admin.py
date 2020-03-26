@@ -261,6 +261,24 @@ class SessionLogAdmin(admin.ModelAdmin):
 
 @admin.register(AccessLog)
 class AccessLogAdmin(admin.ModelAdmin):
+    def ip_link(self, obj):
+        if obj.ip:
+            url = reverse('admin:analytics_ip_change', args = [obj.ip.id])
+            html = format_html("<a href='{}'>{}</a>", url, obj.ip.__str__())
+        else:
+            html = format_html("-")
+        return html
+    ip_link.admin_order_field = 'IP'
+    ip_link.short_description = 'IP'
+    def domain_link(self, obj):
+        if obj.ip.host:
+            url = reverse('admin:analytics_hostname_change', args = [obj.ip.host.id])
+            html = format_html("<a href='{}'>{}</a>", url, obj.ip.host.domain())
+        else:
+            html = format_html("-")
+        return html
+    domain_link.admin_order_field = 'Domain'
+    domain_link.short_description = 'Domain'
     def ua_link(self, obj):
         if obj.user_agent:
             url = reverse('admin:analytics_useragent_change', args = [obj.user_agent.id])
@@ -270,14 +288,63 @@ class AccessLogAdmin(admin.ModelAdmin):
         return html
     ua_link.admin_order_field = 'User Agent'
     ua_link.short_description = 'User Agent'
+    def request_url_link(self, obj):
+        if obj.status in [401,402,403,500]:
+            color = RED
+        elif obj.status in [404]:
+            color = ORANGE
+        elif obj.status in [410]:
+            color = PURPLE
+        elif obj.status in [301,302,308,309]:
+            color = BLUE
+        elif obj.ajax:
+            color = GRAY
+        else:
+            color = BLACK
+        if obj.request_url:
+            url = reverse('admin:analytics_url_change', args = [obj.request_url.id])
+            html = format_html("<span style='color: {};'><a href='{}'>{}</a></span>", color, url, obj.request_url.__str__()[:40])
+        else:
+            html = format_html("-")
+        return html
+    request_url_link.admin_order_field = 'Request URL'
+    request_url_link.short_description = 'Request URL'
+    def direction_link(self, obj):
+        if obj.method:
+            if METHOD_CHOICES_DICT[obj.method] == 'GET':
+                method = '-'
+            elif METHOD_CHOICES_DICT[obj.method] == 'POST':
+                method = '+'
+            else:
+                method = '?'
+        else:
+            method = '*'
+        if obj.ajax:
+            direction = f'<{method}'
+        else:
+            direction = f'{method}>'
+        return format_html(direction)
+    direction_link.admin_order_field = ''
+    direction_link.short_description = ''
+    def referer_url_link(self, obj):
+        if obj.referer_url:
+            url = reverse('admin:analytics_url_change', args = [obj.referer_url.id])
+            html = format_html("<a href='{}'>{}</a>", url, obj.referer_url.__str__()[:40])
+        else:
+            html = format_html("*")
+        return html
+    referer_url_link.admin_order_field = 'Referer URL'
+    referer_url_link.short_description = 'Referer URL'
 
     list_display = [
         'timestamp',
-        'colored_ip',
+        'domain_link',
+        'ip_link',
         'colored_response_time',
         'colored_size',
-        'colored_request_url',
-        'referer_url',
+        'referer_url_link',
+        'direction_link',
+        'request_url_link',
         'ua_link']
     list_display_links = ['timestamp',]
     readonly_fields=(

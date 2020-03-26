@@ -1,5 +1,6 @@
 uwsgi.ini
+settings.ini
+local.env
 local.py
-production.py
 *pyc
-
+scratch.*

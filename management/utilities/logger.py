@@ -89,14 +89,14 @@ class LogWriter():
             compress = '*'
         else:
             compress = ''
-        if hasattr(settings,'BASEURL'):
-            if msg.url.startswith(settings.BASEURL):
-                url = msg.url[len(settings.BASEURL):]
+        if hasattr(settings,'ROOT_URL'):
+            if msg.url.startswith(settings.ROOT_URL):
+                url = msg.url[len(settings.ROOT_URL):]
             else:
                 url = msg.url
             if msg.referer:
-                if msg.referer.startswith(settings.BASEURL):
-                    referer = msg.referer[len(settings.BASEURL):]
+                if msg.referer.startswith(settings.ROOT_URL):
+                    referer = msg.referer[len(settings.ROOT_URL):]
                 else:
                     referer = msg.referer
             else:

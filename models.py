@@ -20,6 +20,8 @@ class HostName(models.Model):
         db_index=True, unique=True)
     def __str__(self):
         return self.name
+    def domain(self):
+        return self.name[self.name.find(".")+1:] 
     class Meta:
         verbose_name = 'Host Name'
 
@@ -103,7 +105,15 @@ class URL(models.Model):
         null=True,blank=True,
         on_delete=models.SET_NULL)
     def __str__(self):
-        return self.name
+        if hasattr(settings,'ROOT_URL'):
+            if self.name.startswith(settings.ROOT_URL):
+                url = self.name[len(settings.ROOT_URL):]
+            else:
+                url = self.name
+        else:
+            url = self.name
+        return url
+
     class Meta:
         verbose_name = 'URL'
 
@@ -215,6 +225,7 @@ class OS(models.Model):
                 os = f'{os} ({self.patch}.{self.minor_patch})'
         return os
     class Meta:
+        verbose_name = 'Operating System'
         constraints = [
             models.UniqueConstraint(
                 fields = ['family',
