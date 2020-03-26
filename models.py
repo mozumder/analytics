@@ -269,8 +269,10 @@ class Device(models.Model):
             device = f'{self.brand}'
             if self.model:
                 device = f'{device} {self.model}'
-        else:
+        elif self.family:
             device = f'{self.family}'
+        else:
+            device = ''
 
         return device
 
@@ -338,20 +340,24 @@ class UserAgent(models.Model):
                     os = f'{os} {os_major_version}'
                 if os_minor_version:
                     os = f'{os}.{os_minor_version}'
+            bot = ''
+            device = ''
             if user_agent.device.family == 'Spider':
-                device = ''
                 bot = '*'
-            else:
-                bot = ''
-                if user_agent.device.family == 'Generic Smartphone':
-                    device = f', {user_agent.device.family}'
+            elif user_agent.device.family == 'Generic Smartphone':
+                device = f', {user_agent.device.family}'
+            elif user_agent.device.family == 'Generic Desktop':
+                device = f', {user_agent.device.family}'
+            elif user_agent.device.family != 'Other':
+                if user_agent.device.brand:
+                    device = f', {user_agent.device.brand}'
+                    if user_agent.device.model:
+                        device = f'{device} {user_agent.device.model}'
                 else:
-                    device = f', {user_agent.device.brand} {user_agent.device.family}'
-                    if user_agent.device.family != user_agent.device.model:
-                         device = f'{device} {user_agent.device.model}'
+                    device = f', {user_agent.device.family}'
             ua = f'{browser}{os}{device}'
         else:
-            ua = f'(ua_string)*'
+            ua = f'(self.user_agent_string)*'
             bot = ''
 
         return format_html(
