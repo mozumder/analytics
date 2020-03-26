@@ -338,8 +338,8 @@ class AccessLogAdmin(admin.ModelAdmin):
 
     list_display = [
         'timestamp',
-        'domain_link',
         'ip_link',
+        'domain_link',
         'colored_response_time',
         'colored_size',
         'referer_url_link',

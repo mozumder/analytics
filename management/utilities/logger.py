@@ -201,8 +201,11 @@ class LogWriter():
             cursor.execute('execute get_host(%s);' , [result.ip_id])
             ip_result = cursor.fetchone()
             if ip_result:
-                host = ip_result.name
-                create_host = False
+                if ip_result.name:
+                    host = ip_result.name
+                    create_host = False
+                else:
+                    create_host = True
             if host == None:
                 try:
                     host = socket.gethostbyaddr(msg.ip)[0]
