@@ -261,7 +261,7 @@ class LogWriter():
 
 
         domain = host[host.find(".")+1:]
-        if user_agent.browser.family != 'Other:
+        if user_agent.browser.family != 'Other':
             browser = f'{user_agent.browser.family}'
             if browser_major_version:
                 browser = f'{browser} {browser_major_version}'
