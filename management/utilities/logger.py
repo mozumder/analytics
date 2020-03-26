@@ -261,30 +261,34 @@ class LogWriter():
 
 
         domain = host[host.find(".")+1:]
-        browser = f'{user_agent.browser.family}'
-        if browser_major_version:
-            browser = f'{browser} {browser_major_version}'
-        if browser_minor_version:
-            browser = f'{browser}.{browser_minor_version}'
-        if user_agent.os.family == 'Other':
-            os = ''
-        else:
-            os = f', {user_agent.os.family}'
-            if os_major_version:
-                os = f'{os} {os_major_version}'
-            if os_minor_version:
-                os = f'{os}.{os_minor_version}'
-        if user_agent.device.family == 'Spider':
-            device = ''
-            bot = '*'
-        else:
-            bot = ''
-            if user_agent.device.family == 'Generic Smartphone':
-                device = f', {user_agent.device.family}'
+        if user_agent.browser.family != 'Other:
+            browser = f'{user_agent.browser.family}'
+            if browser_major_version:
+                browser = f'{browser} {browser_major_version}'
+            if browser_minor_version:
+                browser = f'{browser}.{browser_minor_version}'
+            if user_agent.os.family == 'Other':
+                os = ''
             else:
-                device = f', {user_agent.device.brand} {user_agent.device.family}'
-                if user_agent.device.family != user_agent.device.model:
-                     device = f'{device} {user_agent.device.model}'
+                os = f', {user_agent.os.family}'
+                if os_major_version:
+                    os = f'{os} {os_major_version}'
+                if os_minor_version:
+                    os = f'{os}.{os_minor_version}'
+            if user_agent.device.family == 'Spider':
+                device = ''
+                bot = '*'
+            else:
+                bot = ''
+                if user_agent.device.family == 'Generic Smartphone':
+                    device = f', {user_agent.device.family}'
+                else:
+                    device = f', {user_agent.device.brand} {user_agent.device.family}'
+                    if user_agent.device.family != user_agent.device.model:
+                         device = f'{device} {user_agent.device.model}'
+            ua = f'({browser}{os}{device}){bot}'
+        else:
+            ua = f'(ua_string)*'
 
         timestamp = timezone.localtime(result.timestamp).strftime("%Y-%m-%d %H:%M:%S")
         log_response_time = (log_timestamp_result.log_timestamp-result.timestamp).microseconds/1000
@@ -299,7 +303,7 @@ class LogWriter():
             f'{msg.response_content_length}b{compress} '
             f'{msg.status_code} '
             f'{referer} {direction} {url} '
-            f"({browser}{os}{device}){bot} "
+            f'{ua} '
         )
         
     @staticmethod
