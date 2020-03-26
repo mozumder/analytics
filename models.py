@@ -352,6 +352,7 @@ class UserAgent(models.Model):
             ua = f'{browser}{os}{device}'
         else:
             ua = f'(ua_string)*'
+            bot = ''
 
         return format_html(
             '{}<span style="color: {};">{}</span>',
