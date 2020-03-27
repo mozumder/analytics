@@ -407,7 +407,7 @@ class LogWriter():
         else:
             msg.user_id = None
         msg.session_start_time = response.request.session.get('session_start_time')
-        if response.__class__.__name__ == 'StreamingHTMLAnalyticResponse':
+        if response.__class__.__name__ == 'AnalyticStreamingHTTPResponse':
             # lol race condition where we have to wait for cache populating
             # waiting 50 ms should be enough.
             # Should convert to Python 3.5+ async/await or a signaling framework,
