@@ -163,10 +163,6 @@ class LogWriter():
         else:
             os_minor_patch = None
 
-        host = None
-        create_host = True
-        update_host = False
-
         with lock:
             cursor.execute("execute " + LogWriter.log_sql + "(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s);", [
                 msg.timestamp,
@@ -201,23 +197,46 @@ class LogWriter():
 #            print(f'{dir(result)=}')
 #            dir(result)=['__add__', '__class__', '__contains__', '__delattr__', '__dir__', '__doc__', '__eq__', '__format__', '__ge__', '__getattribute__', '__getitem__', '__getnewargs__', '__gt__', '__hash__', '__init__', '__init_subclass__', '__iter__', '__le__', '__len__', '__lt__', '__module__', '__mul__', '__ne__', '__new__', '__reduce__', '__reduce_ex__', '__repr__', '__rmul__', '__setattr__', '__sizeof__', '__slots__', '__str__', '__subclasshook__', '_asdict', '_field_defaults', '_fields', '_fields_defaults', '_make', '_replace', 'accept_encoding_id', 'accept_language_id', 'accept_type_id', 'ajax', 'cached', 'compress', 'connect_time', 'count', 'host_name_id', 'id', 'index', 'ip_id', 'latitude', 'log_timestamp', 'longitude', 'lookup_time', 'method', 'prefetch', 'preview', 'protocol', 'referer_url_id', 'request_content_length', 'request_content_type_id', 'request_url_id', 'response_content_length', 'response_content_type_id', 'response_time', 'session_id', 'session_log_id', 'ssl_time', 'status', 'timestamp', 'user_agent_id', 'user_id']
 
-
+            host = None
             cursor.execute('execute get_host(%s);' , [result.ip_id])
-            ip_result = cursor.fetchone()
-            if ip_result:
-                if ip_result.name:
-                    host = ip_result.name
-                    create_host = False
+            host_result = cursor.fetchone()
+            if host_result:
+                host = host_result.hostname
+                if host_result.domain_id == None:
+                    names = host.split(".")[1:]
+                    if names:
+                        domain = names[-1]
+                        if len(names) > 1:
+                            domain = names[-2] + '.' + domain
+                        if len(names) > 2:
+                            domain = names[-3] + domain
+                        cursor.execute('execute create_domain(%s, %s);' ,
+                            [domain, msg.bot])
+                        domain_result = cursor.fetchone()
+                        cursor.execute('execute update_host_domain(%s, %s);' ,
+                            [result.ip_id, domain_result.id])
+                    else:
+                        domain = '-'
                 else:
-                    create_host = True
-            if host == None:
+                    domain = host_result.domainname
+            else:
+                host = None
                 try:
                     host = socket.gethostbyaddr(msg.ip)[0]
-                    update_host = True
                 except:
-                    host = '-'
-            if create_host and update_host:
-                cursor.execute('execute update_host(%s, %s);' , [result.ip_id, host])
+                    domain = '-'
+                if host:
+                    names = host.split(".")[1:]
+                    domain = names[-1]
+                    if len(names) > 1:
+                        domain = names[-2] + '.' + domain
+                    if len(names) > 2:
+                        domain = names[-3] + domain
+                    cursor.execute('execute create_domain(%s, %s);' ,
+                        [domain, msg.bot])
+                    domain_result = cursor.fetchone()
+                    cursor.execute('execute update_host(%s, %s, %s, %s);' ,
+                        [result.ip_id, domain_result.id, host, msg.bot])
 
             cursor.execute('execute get_user_agent(%s);' , [result.user_agent_id])
             useragent_result = cursor.fetchone()
@@ -263,8 +282,6 @@ class LogWriter():
             cursor.execute('execute record_timestamp(%s);', [ result.id ])
             log_timestamp_result = cursor.fetchone()
 
-
-        domain = host[host.find(".")+1:]
         if user_agent.browser.family != 'Other':
             browser = f'{user_agent.browser.family}'
             if browser_major_version != None:

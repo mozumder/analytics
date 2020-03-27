@@ -46,6 +46,8 @@ class HostName(models.Model):
         tld = names[-1]
         if len(names) > 1:
             domain = names[-2] + '.' + tld
+        else:
+            domain = ''
         if len(names) > 2:
             domain = names[-3] + domain
         return domain

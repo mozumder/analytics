@@ -33,12 +33,14 @@ as
                 analytics_ip
             (
                 address,
-                bot
+                bot,
+                date_updated
             )
         values
             (
                 $2,
-                $27
+                $27,
+                current_timestamp
             )
         on conflict do nothing
         returning id
@@ -48,11 +50,13 @@ as
                 analytics_url
             (
                 name,
-                scheme
+                scheme,
+                date_updated
             )
         select
             $5,
-            false
+            false,
+            current_timestamp
         where
             $5 NOTNULL
         on conflict do nothing
@@ -76,11 +80,13 @@ as
                 analytics_url
             (
                 name,
-                scheme
+                scheme,
+                date_updated
             )
         select
             $9,
-            false
+            false,
+            current_timestamp
         where
             $9 NOTNULL
         on conflict do nothing
@@ -91,11 +97,13 @@ as
                 analytics_useragent
             (
                 user_agent_string,
-                bot
+                bot,
+                date_updated
             )
         select
             $10,
-            $27
+            $27,
+            current_timestamp
         where
             $10 NOTNULL
         on conflict do nothing
@@ -280,36 +288,157 @@ as
     returning timestamp, log_timestamp, response_time, ip_id, user_agent_id, id
 ;
 
+prepare get_domain(
+    integer
+)
+as
+    select
+        analytics_domain.name
+    from
+        analytics_hostname
+    left outer join
+        analytics_domain
+    on
+        analytics_domain.id = analytics_hostname.domain_id
+    where
+        analytics_hostname.id = $1
+;
+
 prepare get_host(
     integer
 )
 as
     select
-        name
+        analytics_hostname.id as host_id,
+        analytics_hostname.name as hostname,
+        domain_id,
+        analytics_domain.name as domainname
     from
         analytics_ip
     left outer join
         analytics_hostname
     on
         analytics_hostname.id = analytics_ip.host_id
+    left outer join
+        analytics_domain
+    on
+        analytics_domain.id = analytics_hostname.domain_id
     where
         analytics_ip.id = $1
+;
+prepare create_domain(
+    varchar(80),
+    bool
+)
+as
+    insert into
+            analytics_domain
+        (
+            name,
+            bot,
+            date_updated
+        )
+    values
+        (
+            $1,
+            $2,
+            current_timestamp
+        )
+    on conflict do nothing
+    returning id
+;
+
+prepare update_domain(
+    integer,
+    varchar(80),
+    bool
+)
+as
+    with domainname as (
+        insert into
+                analytics_domain
+            (
+                name,
+                bot,
+                date_updated
+            )
+        values
+            (
+                $2,
+                $3,
+                current_timestamp
+            )
+        on conflict do nothing
+        returning id
+    )
+    update
+        analytics_hostname
+    set
+        domain_id = t.id
+    from
+        (
+            select id from analytics_domain where analytics_domain.name = $2
+            union
+            select id from domainname
+        ) as t
+    where
+        analytics_hostname.id = $1
+;
+
+prepare create_host(
+    varchar(80),
+    integer
+)
+as
+    insert into
+            analytics_hostname
+        (
+            name,
+            domain_id,
+            date_updated
+        )
+    values
+        (
+            $1,
+            $2,
+            current_timestamp
+        )
+    on conflict do nothing
+    returning id
+;
+
+prepare update_host_domain(
+    integer,
+    integer
+)
+as
+    update analytics_hostname as hostname
+    set domain_id = $2
+    from analytics_ip
+    where analytics_ip.host_id = hostname.id
+    and analytics_ip.id = $1
 ;
 
 prepare update_host(
     integer,
-    varchar(80)
+    integer,
+    varchar(80),
+    bool
 )
 as
     with hostname as (
         insert into
                 analytics_hostname
             (
-                name
+                name,
+                domain_id,
+                date_updated
             )
         values
             (
-                $2
+                $3,
+                $2,
+                current_timestamp
             )
         on conflict do nothing
         returning id
@@ -317,10 +446,11 @@ as
     update
         analytics_ip
     set
-        host_id = t.id
+        host_id = t.id,
+        bot = $4
     from
         (
-            select id from analytics_hostname where analytics_hostname.name = $2
+            select id from analytics_hostname where analytics_hostname.name = $3
             union
             select id from hostname
         ) as t
@@ -357,14 +487,16 @@ as
                 family,
                 major_version,
                 minor_version,
-                patch
+                patch,
+                date_updated
             )
         values
             (
                 $2,
                 $3,
                 $4,
-                $5
+                $5,
+                current_timestamp
             )
         on conflict do nothing
         returning id
@@ -404,7 +536,8 @@ as
                 major_version,
                 minor_version,
                 patch,
-                minor_patch
+                minor_patch,
+                date_updated
             )
         values
             (
@@ -412,7 +545,8 @@ as
                 $3,
                 $4,
                 $5,
-                $6
+                $6,
+                current_timestamp
             )
         on conflict do nothing
         returning id
@@ -460,7 +594,8 @@ as
                 pc,
                 tablet,
                 touch,
-                bot
+                bot,
+                date_updated
             )
         values
             (
@@ -471,7 +606,8 @@ as
                 $6,
                 $7,
                 $8,
-                $9
+                $9,
+                current_timestamp
             )
         on conflict do nothing
         returning id
