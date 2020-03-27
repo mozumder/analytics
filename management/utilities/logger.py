@@ -221,44 +221,44 @@ class LogWriter():
 
             cursor.execute('execute get_user_agent(%s);' , [result.user_agent_id])
             useragent_result = cursor.fetchone()
+            if useragent_result:
+                if useragent_result.browser_id is None:
+                    cursor.execute(
+                        'execute update_browser(%s, %s, %s, %s, %s);' ,
+                        [
+                            result.user_agent_id,
+                            user_agent.browser.family,
+                            browser_major_version,
+                            browser_minor_version,
+                            browser_patch,
+                        ])
 
-            if useragent_result.browser_id == None:
-                cursor.execute(
-                    'execute update_browser(%s, %s, %s, %s, %s);' ,
-                    [
-                        result.user_agent_id,
-                        user_agent.browser.family,
-                        browser_major_version,
-                        browser_minor_version,
-                        browser_patch,
-                    ])
+                if useragent_result.os_id is None:
+                    cursor.execute(
+                        'execute update_os(%s, %s, %s, %s, %s, %s);' ,
+                        [
+                            result.user_agent_id,
+                            user_agent.os.family,
+                            os_major_version,
+                            os_minor_version,
+                            os_patch,
+                            os_minor_patch,
+                        ])
 
-            if useragent_result.os_id == None:
-                cursor.execute(
-                    'execute update_os(%s, %s, %s, %s, %s, %s);' ,
-                    [
-                        result.user_agent_id,
-                        user_agent.os.family,
-                        os_major_version,
-                        os_minor_version,
-                        os_patch,
-                        os_minor_patch,
-                    ])
-
-            if useragent_result.device_id == None:
-                cursor.execute(
-                    'execute update_device(%s, %s, %s, %s, %s, %s, %s, %s, %s);' ,
-                    [
-                        result.user_agent_id,
-                        user_agent.device.family,
-                        user_agent.device.brand,
-                        user_agent.device.model,
-                        user_agent.is_mobile,
-                        user_agent.is_pc,
-                        user_agent.is_tablet,
-                        user_agent.is_touch_capable,
-                        user_agent.is_bot
-                    ])
+                if useragent_result.device_id is None:
+                    cursor.execute(
+                        'execute update_device(%s, %s, %s, %s, %s, %s, %s, %s, %s);' ,
+                        [
+                            result.user_agent_id,
+                            user_agent.device.family,
+                            user_agent.device.brand,
+                            user_agent.device.model,
+                            user_agent.is_mobile,
+                            user_agent.is_pc,
+                            user_agent.is_tablet,
+                            user_agent.is_touch_capable,
+                            user_agent.is_bot
+                        ])
 
             cursor.execute('execute record_timestamp(%s);', [ result.id ])
             log_timestamp_result = cursor.fetchone()

@@ -1,5 +1,5 @@
 from django.shortcuts import render
-from django.http import HttpResponseRedirect, HttpResponse, StreamingHttpResponse, JsonResponse, HttpResponseNotFound
+from django.http import HttpResponseRedirect, HttpResponse, StreamingHttpResponse, JsonResponse, HttpResponseNotFound, HttpResponseBadRequest, HttpResponseForbidden, HttpResponseServerError
 from .models import AccessLog
 from .signals import log_response
 
@@ -25,44 +25,47 @@ class AnalyticResponseBase():
         super().close()
         log_response.send(sender=AccessLog.objects.__class__, response=self)
 
-
-class AnalyticResponse(AnalyticResponseBase, HttpResponse):
-
-    def __init__(self, request=None, cached=None, content=b'', content_type=None, status=200, reason=None, charset=None):
-        super().__init__(request, cached, content, content_type, status, reason, charset)
-
-class HTMLAnalyticResponse(AnalyticResponseBase, HttpResponse):
+class AnalyticHttpResponse(AnalyticResponseBase, HttpResponse):
 
     def __init__(self, content=b'', status=200, reason=None, charset=None, request=None, slug=None, id=None, cached=False):
-        self.length = len(content)
+        if content:
+            self.length = len(content)
+        else:
+            self.length = 0
         super().__init__(request, cached, content, status=status, reason=reason, charset=charset)
 
-class StreamingHTMLAnalyticResponse(AnalyticResponseBase, StreamingHttpResponse):
+class AnalyticStreamingHTTPResponse(AnalyticResponseBase, StreamingHttpResponse):
 
     def __init__(self, streaming_content=(), status=200, reason=None, charset=None, request=None, pageKey=None):
         self.pageKey = pageKey
         super().__init__(request, cached=False, streaming_content=streaming_content, status=status, reason=reason, charset=charset)
 
-class JSONAnalyticResponse(AnalyticResponseBase, HttpResponse):
+class AnalyticJSONResponse(AnalyticResponseBase, HttpResponse):
 
     def __init__(self, content=b'', status=200, reason=None, charset=None, request=None, cached=False):
-        self.length = len(content)
+        if content:
+            self.length = len(content)
+        else:
+            self.length = 0
         super().__init__(request, cached, content, "application/json", status, reason, charset)
 
 
 class AnalyticsHttpResponseNotFound(AnalyticResponseBase, HttpResponse):
 
     def __init__(self, content=b'', status=404, reason='Not Found', charset=None, request=None, cached=False):
-        self.length = len(content)
+        if content:
+            self.length = len(content)
+        else:
+            self.length = 0
         super().__init__(request, cached, content, status=status, reason=reason, charset=charset)
 
-class AnalyticsHttpResponseBadRequest(AnalyticResponseBase, HttpResponse):
+class AnalyticsHttpResponseBadRequest(AnalyticResponseBase, HttpResponseBadRequest):
 
     def __init__(self, content=b'', status=400, reason='Bad Request', charset=None, request=None, cached=False):
         self.length = len(content)
         super().__init__(request, cached, content, status=status, reason=reason, charset=charset)
 
-class AnalyticsHttpResponseForbidden(AnalyticResponseBase, HttpResponse):
+class AnalyticsHttpResponseForbidden(AnalyticResponseBase, HttpResponseForbidden):
 
     def __init__(self, content=b'', status=403, reason='Forbidden', charset=None, request=None, cached=False):
         self.length = len(content)
@@ -71,12 +74,18 @@ class AnalyticsHttpResponseForbidden(AnalyticResponseBase, HttpResponse):
 class AnalyticsHttpResponseGone(AnalyticResponseBase, HttpResponse):
 
     def __init__(self, content=b'', status=410, reason='Gone', charset=None, request=None, cached=False):
-        self.length = len(content)
+        if content:
+            self.length = len(content)
+        else:
+            self.length = 0
         super().__init__(request, cached, content, status=status, reason=reason, charset=charset)
 
-class AnalyticsHttpResponseServerError(AnalyticResponseBase, HttpResponse):
+class AnalyticsHttpResponseServerError(AnalyticResponseBase, HttpResponseServerError):
 
     def __init__(self, content=b'', status=500, reason='Server Error', charset=None, request=None, cached=False):
-        self.length = len(content)
+        if content:
+            self.length = len(content)
+        else:
+            self.length = 0
         super().__init__(request, cached, content, status=status, reason=reason, charset=charset)
 
