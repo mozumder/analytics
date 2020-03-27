@@ -215,7 +215,7 @@ class LogWriter():
                         domain_result = cursor.fetchone()
                         if domain_result:
                             cursor.execute('execute update_host_domain(%s, %s);' ,
-                                [host_result.id, domain_result.id])
+                                [host_result.host_id, domain_result.id])
                     else:
                         domain = '-'
                 else:
@@ -237,9 +237,9 @@ class LogWriter():
                         [domain, msg.bot])
                     domain_result = cursor.fetchone()
                     if domain_result:
-                        if host_result.id != None:
+                        if host_result.host_id != None:
                             cursor.execute('execute update_host_domain(%s, %s);' ,
-                                [host_result.id, domain_result.id])
+                                [host_result.host_id, domain_result.id])
                         else:
                             cursor.execute('execute update_host(%s, %s, %s, %s);' ,
                                 [result.ip_id, domain_result.id, host, msg.bot])
