@@ -49,7 +49,7 @@ class HostName(models.Model):
         else:
             domain = ''
         if len(names) > 2:
-            domain = names[-3] + domain
+            domain = names[-3] + "." + domain
         return domain
     class Meta:
         verbose_name = 'Host Name'
