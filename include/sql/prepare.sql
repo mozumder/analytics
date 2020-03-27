@@ -325,7 +325,7 @@ as
             select id from hostname
         ) as t
     where
-        analytics_ip.id = $1 ;
+        analytics_ip.id = $1
 ;
 
 prepare get_user_agent(

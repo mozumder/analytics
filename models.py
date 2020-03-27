@@ -13,15 +13,42 @@ from .apps import *
 global streaming_length
 streaming_length = 0
 
+class Domain(models.Model):
+    name = models.CharField(
+        verbose_name='Domain Name String',
+        max_length=80,
+        db_index=True, unique=True)
+    bot = models.BooleanField(default=False)
+    date_updated = models.DateTimeField(
+        default=timezone.now)
+    def __str__(self):
+        return self.name
+    class Meta:
+        verbose_name = 'Host Name'
+
 class HostName(models.Model):
     name = models.CharField(
         verbose_name='Host Name String',
         max_length=80,
         db_index=True, unique=True)
+    domain = models.ForeignKey(
+        Domain,
+        verbose_name="Domain",
+        on_delete=models.SET_NULL,
+        db_index=True,
+        null=True,blank=True)
+    date_updated = models.DateTimeField(
+        default=timezone.now)
     def __str__(self):
         return self.name
-    def domain(self):
-        return self.name[self.name.find(".")+1:] 
+    def domain_name(self):
+        names = self.name.split(".")[1:]
+        tld = names[-1]
+        if len(names) > 1:
+            domain = names[-2] + '.' + tld
+        if len(names) > 2:
+            domain = names[-3] + domain
+        return domain
     class Meta:
         verbose_name = 'Host Name'
 
@@ -44,6 +71,8 @@ class IP(models.Model):
         max_digits=9,
         decimal_places=6,
         null=True,blank=True)
+    date_updated = models.DateTimeField(
+        default=timezone.now)
     def __str__(self):
         if self.bot == False:
             color = BLACK
@@ -104,6 +133,8 @@ class URL(models.Model):
         'self',
         null=True,blank=True,
         on_delete=models.SET_NULL)
+    date_updated = models.DateTimeField(
+        default=timezone.now)
     def __str__(self):
         if hasattr(settings,'ROOT_URL'):
             if self.name.startswith(settings.ROOT_URL):
@@ -174,6 +205,8 @@ class Browser(models.Model):
         max_length=254,
         db_index=True,
         null=True,blank=True)
+    date_updated = models.DateTimeField(
+        default=timezone.now)
     class Meta:
         constraints = [
             models.UniqueConstraint(
@@ -214,6 +247,8 @@ class OS(models.Model):
         max_length=254,
         db_index=True,
         null=True,blank=True)
+    date_updated = models.DateTimeField(
+        default=timezone.now)
     def __str__(self):
         os = f'{self.family}'
         if self.major_version:
@@ -255,6 +290,8 @@ class Device(models.Model):
     tablet = models.BooleanField(default=False)
     touch = models.BooleanField(default=False)
     bot = models.BooleanField(default=False)
+    date_updated = models.DateTimeField(
+        default=timezone.now)
     class Meta:
         constraints = [
             models.UniqueConstraint(
@@ -298,6 +335,8 @@ class UserAgent(models.Model):
         on_delete=models.CASCADE,
         null=True,blank=True)
     bot = models.BooleanField(default=False)
+    date_updated = models.DateTimeField(
+        default=timezone.now)
     class Meta:
         verbose_name = 'User Agent'
     
@@ -394,7 +433,6 @@ class SessionLog(models.Model):
 class AccessLogManager(models.Manager):
 
     def log(self,response):
-        print('AccessLogManager.log()')
         log_data_ready.send(sender=self.__class__, response=response)
 
 class AccessLog(models.Model):
