@@ -15,7 +15,7 @@ streaming_length = 0
 
 class Domain(models.Model):
     name = models.CharField(
-        verbose_name='Domain Name String',
+        verbose_name='Domain Name',
         max_length=80,
         db_index=True, unique=True)
     bot = models.BooleanField(default=False)
@@ -24,11 +24,11 @@ class Domain(models.Model):
     def __str__(self):
         return self.name
     class Meta:
-        verbose_name = 'Host Name'
+        verbose_name = 'Domain Name'
 
 class HostName(models.Model):
     name = models.CharField(
-        verbose_name='Host Name String',
+        verbose_name='Host',
         max_length=80,
         db_index=True, unique=True)
     domain = models.ForeignKey(

@@ -213,8 +213,9 @@ class LogWriter():
                         cursor.execute('execute create_domain(%s, %s);' ,
                             [domain, msg.bot])
                         domain_result = cursor.fetchone()
-                        cursor.execute('execute update_host_domain(%s, %s);' ,
-                            [result.ip_id, domain_result.id])
+                        if domain_result:
+                            cursor.execute('execute update_host_domain(%s, %s);' ,
+                                [host_result.id, domain_result.id])
                     else:
                         domain = '-'
                 else:
@@ -235,8 +236,9 @@ class LogWriter():
                     cursor.execute('execute create_domain(%s, %s);' ,
                         [domain, msg.bot])
                     domain_result = cursor.fetchone()
-                    cursor.execute('execute update_host(%s, %s, %s, %s);' ,
-                        [result.ip_id, domain_result.id, host, msg.bot])
+                    if domain_result:
+                        cursor.execute('execute update_host(%s, %s, %s, %s);' ,
+                            [result.ip_id, domain_result.id, host, msg.bot])
 
             cursor.execute('execute get_user_agent(%s);' , [result.user_agent_id])
             useragent_result = cursor.fetchone()

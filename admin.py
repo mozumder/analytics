@@ -29,13 +29,36 @@ class IPAdmin(admin.ModelAdmin):
 
 @admin.register(HostName)
 class HostNameAdmin(admin.ModelAdmin):
-    list_display = ['id', 'name',]
+    def domain_link(self, obj):
+        if obj.domain:
+            url = reverse('admin:analytics_domain_change', args = [obj.domain.id])
+            html = format_html("<a href='{}'>{}</a>", url, obj.domain.__str__())
+        else:
+            html = format_html("-")
+        return html
+    list_display = ['id', 'name','domain_link', 'date_updated']
     list_display_links = ['id',]
     readonly_fields=('id',)
     search_fields = ['name']
     fieldsets = [
         (None, {'fields': [
             ('name'),
+            ('date_updated'),
+            ]
+        }),
+    ]
+
+@admin.register(Domain)
+class DomiainAdmin(admin.ModelAdmin):
+    list_display = ['id', 'bot', 'name', 'date_updated']
+    list_display_links = ['id',]
+    readonly_fields=('id',)
+    search_fields = ['name']
+    fieldsets = [
+        (None, {'fields': [
+            ('name'),
+            ('bot'),
+            ('date_updated'),
             ]
         }),
     ]
@@ -273,7 +296,7 @@ class AccessLogAdmin(admin.ModelAdmin):
     def domain_link(self, obj):
         if obj.ip.host:
             url = reverse('admin:analytics_hostname_change', args = [obj.ip.host.id])
-            html = format_html("<a href='{}'>{}</a>", url, obj.ip.host.domain())
+            html = format_html("<a href='{}'>{}</a>", url, obj.ip.host.domain_name())
         else:
             html = format_html("-")
         return html

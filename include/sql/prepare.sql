@@ -412,11 +412,9 @@ prepare update_host_domain(
     integer
 )
 as
-    update analytics_hostname as hostname
+    update analytics_hostname
     set domain_id = $2
-    from analytics_ip
-    where analytics_ip.host_id = hostname.id
-    and analytics_ip.id = $1
+    where id = $1
 ;
 
 prepare update_host(
