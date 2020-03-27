@@ -209,7 +209,7 @@ class LogWriter():
                         if len(names) > 1:
                             domain = names[-2] + '.' + domain
                         if len(names) > 2:
-                            domain = names[-3] + domain
+                            domain = names[-3] + "." + domain
                         cursor.execute('execute create_domain(%s, %s);' ,
                             [domain, msg.bot])
                         domain_result = cursor.fetchone()
