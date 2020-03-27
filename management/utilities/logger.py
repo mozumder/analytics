@@ -200,7 +200,7 @@ class LogWriter():
             host = None
             cursor.execute('execute get_host(%s);' , [result.ip_id])
             host_result = cursor.fetchone()
-            if host_result:
+            if host_result.hostname:
                 host = host_result.hostname
                 if host_result.domain_id == None:
                     names = host.split(".")[1:]
@@ -237,8 +237,12 @@ class LogWriter():
                         [domain, msg.bot])
                     domain_result = cursor.fetchone()
                     if domain_result:
-                        cursor.execute('execute update_host(%s, %s, %s, %s);' ,
-                            [result.ip_id, domain_result.id, host, msg.bot])
+                        if host_result.id:
+                            cursor.execute('execute update_host_domain(%s, %s);' ,
+                                [host_result.id, domain_result.id])
+                        else:
+                            cursor.execute('execute update_host(%s, %s, %s, %s);' ,
+                                [result.ip_id, domain_result.id, host, msg.bot])
 
             cursor.execute('execute get_user_agent(%s);' , [result.user_agent_id])
             useragent_result = cursor.fetchone()
