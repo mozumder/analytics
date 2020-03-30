@@ -51,5 +51,5 @@ class AnalyticsConfig(PreparedAppConfig):
                 log_process.start()
                 log_response.connect(self.logwriter.log_multiprocess, dispatch_uid="log_response")
         else:
-            logger.info('Single Processor mode =^(')
+#            logger.debug('Single Processor mode =^(')
             log_response.connect(self.logwriter.log, dispatch_uid="log_response")
