@@ -29,7 +29,7 @@ class Domain(models.Model):
 class HostName(models.Model):
     name = models.CharField(
         verbose_name='Host',
-        max_length=80,
+        max_length=120,
         db_index=True, unique=True)
     domain = models.ForeignKey(
         Domain,
@@ -154,7 +154,7 @@ class URL(models.Model):
 class MIME(models.Model):
     mime_type_string = models.CharField(
         verbose_name='MIME Type String',
-        max_length=50,
+        max_length=80,
         db_index=True, unique=True)
     def __str__(self):
         return self.mime_type_string
@@ -174,7 +174,7 @@ class Accept(models.Model):
 class Language(models.Model):
     language_string = models.CharField(
         verbose_name='Language String',
-        max_length=50,
+        max_length=80,
         db_index=True, unique=True)
     def __str__(self):
         return self.language_string
@@ -184,7 +184,7 @@ class Language(models.Model):
 class Encoding(models.Model):
     encoding_string = models.CharField(
         verbose_name='Request Encoding String',
-        max_length=50,
+        max_length=80,
         db_index=True, unique=True)
     def __str__(self):
         return self.encoding_string
