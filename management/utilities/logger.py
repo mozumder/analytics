@@ -162,41 +162,48 @@ class LogWriter():
             os_minor_patch = user_agent.os.version[3]
         else:
             os_minor_patch = None
-
+        fields = [
+                    msg.timestamp,
+                    msg.ip,
+                    msg.response_time,
+                    msg.status_code,
+                    msg.url[:508] + (msg.url[508:] and '..') if msg.url else None,
+                    msg.request_content_type[:48] + (msg.request_content_type[48:] and '..') if msg.request_content_type else None,
+                    msg.request_method,
+                    msg.ajax,
+                    msg.referer[:508] + (msg.referer[508:] and '..') if msg.referer else None,
+                    ua_string,
+                    msg.request_content_length,
+                    msg.accept[:252] + (msg.accept[252:] and '..') if msg.accept else None,
+                    msg.accept_language[:48] + (msg.accept_language[48:] and '..') if msg.accept_language else None,
+                    msg.accept_encoding[:48] + (msg.accept_encoding[48:] and '..') if msg.accept_encoding else None,
+                    msg.response_content_type[:48] + (msg.response_content_type[48:] and '..') if msg.response_content_type else None,
+                    msg.response_content_length,
+                    msg.compress,
+                    msg.session_key,
+                    msg.user_id,
+                    msg.latitude,
+                    msg.longitude,
+                    msg.protocol,
+                    msg.cached,
+                    msg.session_start_time,
+                    msg.preview,
+                    msg.prefetch,
+                    msg.bot,
+                ]
         with lock:
-            cursor.execute("execute " + LogWriter.log_sql + "(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s);", [
-                msg.timestamp,
-                msg.ip,
-                msg.response_time,
-                msg.status_code,
-                msg.url[:508] + (msg.url[508:] and '..') if msg.url else None,
-                msg.request_content_type[:48] + (msg.request_content_type[48:] and '..') if msg.request_content_type else None,
-                msg.request_method,
-                msg.ajax,
-                msg.referer[:508] + (msg.referer[508:] and '..') if msg.referer else None,
-                ua_string,
-                msg.request_content_length,
-                msg.accept[:252] + (msg.accept[252:] and '..') if msg.accept else None,
-                msg.accept_language[:48] + (msg.accept_language[48:] and '..') if msg.accept_language else None,
-                msg.accept_encoding[:48] + (msg.accept_encoding[48:] and '..') if msg.accept_encoding else None,
-                msg.response_content_type[:48] + (msg.response_content_type[48:] and '..') if msg.response_content_type else None,
-                msg.response_content_length,
-                msg.compress,
-                msg.session_key,
-                msg.user_id,
-                msg.latitude,
-                msg.longitude,
-                msg.protocol,
-                msg.cached,
-                msg.session_start_time,
-                msg.preview,
-                msg.prefetch,
-                msg.bot,
-            ])
-            result = cursor.fetchone()
+        
+            try:
+                cursor.execute("execute " + LogWriter.log_sql + "(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s);", fields)
+                result = cursor.fetchone()
 #            print(f'{dir(result)=}')
 #            dir(result)=['__add__', '__class__', '__contains__', '__delattr__', '__dir__', '__doc__', '__eq__', '__format__', '__ge__', '__getattribute__', '__getitem__', '__getnewargs__', '__gt__', '__hash__', '__init__', '__init_subclass__', '__iter__', '__le__', '__len__', '__lt__', '__module__', '__mul__', '__ne__', '__new__', '__reduce__', '__reduce_ex__', '__repr__', '__rmul__', '__setattr__', '__sizeof__', '__slots__', '__str__', '__subclasshook__', '_asdict', '_field_defaults', '_fields', '_fields_defaults', '_make', '_replace', 'accept_encoding_id', 'accept_language_id', 'accept_type_id', 'ajax', 'cached', 'compress', 'connect_time', 'count', 'host_name_id', 'id', 'index', 'ip_id', 'latitude', 'log_timestamp', 'longitude', 'lookup_time', 'method', 'prefetch', 'preview', 'protocol', 'referer_url_id', 'request_content_length', 'request_content_type_id', 'request_url_id', 'response_content_length', 'response_content_type_id', 'response_time', 'session_id', 'session_log_id', 'ssl_time', 'status', 'timestamp', 'user_agent_id', 'user_id']
 
+            except psycopg2.errors.StringDataRightTruncation:
+                logger.error("Log entry contains too many characters in fields. Please review fields:")
+                count = 0
+                for i in fields:
+                    logger.error(f'{c}: length {len(i)}: {i}')
             host = None
             cursor.execute('execute get_host(%s);' , [result.ip_id])
             host_result = cursor.fetchone()
@@ -210,8 +217,13 @@ class LogWriter():
                             domain = names[-2] + '.' + domain
                         if len(names) > 2:
                             domain = names[-3] + "." + domain
-                        cursor.execute('execute create_domain(%s, %s);' ,
+                        try:
+                            cursor.execute('execute create_domain(%s, %s);' ,
                             [domain, msg.bot])
+                        except psycopg2.errors.StringDataRightTruncation:
+                            logger.error("Log create_domain entry contains too many characters for domain name.")
+                            logger.error(f'length {len(domain)}: {domain}')
+
                         domain_result = cursor.fetchone()
                         if domain_result:
                             cursor.execute('execute update_host_domain(%s, %s);' ,
@@ -228,6 +240,9 @@ class LogWriter():
                     domain = '-'
                 if host:
                     names = host.split(".")[1:]
+                    if len(names) <= 1:
+                        logger = logging.warning(f"No hostname found for host {host}")
+                        names = host.split(".")
                     domain = names[-1]
                     if len(names) > 1:
                         domain = names[-2] + '.' + domain
@@ -241,8 +256,12 @@ class LogWriter():
                             cursor.execute('execute update_host_domain(%s, %s);' ,
                                 [host_result.host_id, domain_result.id])
                         else:
-                            cursor.execute('execute update_host(%s, %s, %s, %s);' ,
-                                [result.ip_id, domain_result.id, host, msg.bot])
+                            try:
+                                cursor.execute('execute update_host(%s, %s, %s, %s);' ,
+                                    [result.ip_id, domain_result.id, host, msg.bot])
+                            except psycopg2.errors.StringDataRightTruncation:
+                                logger.error("Log update_host entry contains too many characters for host name!")
+                                logger.error(f'length {len(host)}: {host}')
 
             cursor.execute('execute get_user_agent(%s);' , [result.user_agent_id])
             useragent_result = cursor.fetchone()
