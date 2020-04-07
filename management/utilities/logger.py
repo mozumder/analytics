@@ -509,11 +509,9 @@ class LogWriter():
                 sql_commands=file.read().strip()
                 if sql_commands:
                     try:
-                        cursor.execute('deallocate log;')
-                    except:
+                        cursor.execute(sql_commands)
+                    except psycopg2.errors.DuplicatePreparedStatement as e:
                         pass
-                    cursor.execute(sql_commands)
-
             lock=threading.Lock()
             logwriter = LogWriter(
                 cursor=cursor,
