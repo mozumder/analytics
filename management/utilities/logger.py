@@ -510,7 +510,7 @@ class LogWriter():
                 if sql_commands:
                     try:
                         cursor.execute(sql_commands)
-                    except psycopg2.errors.DuplicatePreparedStatement as e:
+                    except psycopg2.errors.DuplicatePreparedStatement:
                         pass
             lock=threading.Lock()
             logwriter = LogWriter(
